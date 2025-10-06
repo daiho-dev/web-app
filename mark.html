@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>かんたんMarkdownエディタ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/modern-css-reset/dist/reset.min.css">
+<style>
+  body { font-family: system-ui, sans-serif; margin: 16px; }
+  .wrap { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .toolbar button { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; background:#fff; cursor:pointer; }
+  #md { width: 100%; height: 520px; padding: 10px; border:1px solid #ddd; border-radius:8px; }
+  #preview { border:1px solid #ddd; border-radius:8px; padding:12px; height:520px; overflow:auto; background:#fff; }
+  details { border:1px solid #eee; border-radius:8px; padding:10px; }
+  details summary { cursor: pointer; font-weight: 600; }
+  code, pre { background:#f7f7f7; border-radius:6px; padding:2px 6px; }
+  pre code { display:block; padding:10px; overflow:auto; }
+  @media (max-width: 900px){ .wrap { grid-template-columns: 1fr; } }
+  .pane { display: flex; flex-direction: column; gap: 8px; }
+  .actions { text-align: right; }
+  .actions button { padding: 6px 10px; }
+</style>
+</head>
+<body>
+
+<h2>かんたんMarkdown（プレビューつき）</h2>
+
+<div class="toolbar">
+  <button onclick="insertAround('# ', '')">見出し H1</button>
+  <button onclick="insertAround('## ', '')">見出し H2</button>
+  <button onclick="insertAround('**','**')">太字</button>
+  <button onclick="insertAround('*','*')">斜体</button>
+  <button onclick="insertList('- ')">箇条書き</button>
+  <button onclick="insertList('1. ')">番号リスト</button>
+  <button onclick="insertLink()">リンク</button>
+  <button onclick="insertImage()">画像</button>
+  <button onclick="insertBlock()">コードブロック</button>
+  <button onclick="insertQuote()">引用</button>
+  <button onclick="insertLine()">横線</button>
+</div>
+
+<div class="wrap">
+ <div class="pane">
+  <textarea id="md" placeholder="# タイトル
+ここに文章を書いてください。
+
+- 箇条書き
+- もう1行
+
+**太字** や *斜体* もOK。
+"></textarea>
+    <div class="actions">
+      <button id="copyMd">Markdownをコピー</button>
+    </div>
+  </div>
+
+  <div class="pane">
+    <div id="preview">（ここにプレビュー）</div>
+    <div class="actions">
+      <button id="copyHtml">HTMLをコピー</button>
+    </div>
+  </div>
+</div>
+
+<br>
+<details>
+  <summary>最小チートシート（例）</summary>
+  <div style="margin-top:8px; line-height:1.8;">
+    見出し：<code># タイトル</code> / <code>## 見出し</code><br>
+    太字：<code>**太字**</code>　斜体：<code>*斜体*</code><br>
+    リンク：<code>[表示名](https://example.com)</code><br>
+    画像：<code>![代替テキスト](https://example.com/a.png)</code><br>
+    箇条書き：<code>- 項目</code>（行頭にハイフン＋半角空白）<br>
+    番号：<code>1. 項目</code><br>
+    引用：<code>&gt; 引用文</code><br>
+    コード：<code>`インラインコード`</code> / 複数行は <code>```</code> で囲む<br>
+    横線：<code>---</code>
+  </div>
+</details>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+  var input = document.getElementById('md');
+  var preview = document.getElementById('preview');
+
+  function render() {
+    var txt = input.value;
+    var html = marked.parse(txt);
+    preview.innerHTML = html;
+  }
+
+  input.addEventListener('input', function(){ render(); });
+  render();
+
+  function insertAround(left, right) {
+    input.focus();
+    var s = input.selectionStart;
+    var e = input.selectionEnd;
+    var before = input.value.substring(0, s);
+    var sel = input.value.substring(s, e);
+    var after = input.value.substring(e);
+    if (sel.length === 0) {
+      sel = 'テキスト';
+    }
+    input.value = before + left + sel + right + after;
+    input.selectionStart = before.length + left.length;
+    input.selectionEnd = before.length + left.length + sel.length;
+    render();
+  }
+
+  function insertList(prefix) {
+    input.focus();
+    var s = input.selectionStart;
+    var e = input.selectionEnd;
+    var before = input.value.substring(0, s);
+    var sel = input.value.substring(s, e);
+    var after = input.value.substring(e);
+    var lines;
+    if (sel.length === 0) {
+      lines = ['項目1', '項目2'];
+    } else {
+      lines = sel.split('\n');
+    }
+    var out = '';
+    var i = 0;
+    while (i < lines.length) {
+      if (lines[i].length === 0) {
+        out = out + '\n';
+      } else {
+        out = out + prefix + lines[i] + '\n';
+      }
+      i = i + 1;
+    }
+    input.value = before + out + after;
+    input.selectionStart = before.length;
+    input.selectionEnd = before.length + out.length;
+    render();
+  }
+
+  function insertLink() {
+    var url = prompt('リンクURLを入力してください', 'https://');
+    if (!url) { return; }
+    var text = prompt('表示名（空ならURLを表示）', '公式サイト');
+    if (!text || text.length === 0) { text = url; }
+    insertAround('[' + text + '](', ')');
+    var pos = input.selectionEnd;
+    var v = input.value;
+    input.value = v.substring(0, pos) + url + v.substring(pos);
+    render();
+  }
+
+  function insertImage() {
+    var url = prompt('画像URLを入力してください', 'https://example.com/a.png');
+    if (!url) { return; }
+    var alt = prompt('代替テキスト', '説明文');
+    if (!alt) { alt = ''; }
+    var insert = '![' + alt + '](' + url + ')';
+    insertAround(insert, '');
+  }
+
+  function insertBlock() {
+    var block = '\n```\nここにコード\n```\n';
+    insertAround(block, '');
+  }
+
+  function insertQuote() {
+    var s = '> 引用文';
+    insertAround(s, '');
+  }
+
+  function insertLine() {
+    var s = '\n---\n';
+    insertAround(s, '');
+  }
+
+  // ===== クリップボード共通処理（ここは1セットだけ） =====
+  function copyTextToClipboard(text, btn) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      navigator.clipboard.writeText(text).then(function () {
+        showCopied(btn);
+      }).catch(function () {
+        fallbackCopy(text, btn);
+      });
+    } else {
+      fallbackCopy(text, btn);
+    }
+  }
+
+  function fallbackCopy(text, btn) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    var ok = false;
+    try {
+      ok = document.execCommand("copy");
+    } catch (e) {
+      ok = false;
+    }
+    document.body.removeChild(ta);
+    if (ok === true) {
+      showCopied(btn);
+    } else {
+      alert("コピーに失敗しました");
+    }
+  }
+
+  function showCopied(btn) {
+    if (!btn) {
+      return;
+    }
+    var old = btn.textContent;
+    btn.textContent = "コピーしました";
+    setTimeout(function () {
+      btn.textContent = old;
+    }, 1200);
+  }
+
+  // ===== 動作本体 =====
+  function copyMarkdown() {
+    var btn = document.getElementById("copyMd");
+    var text = document.getElementById("md").value;
+    copyTextToClipboard(text, btn);
+  }
+
+  function copyHTML() {
+    var btn = document.getElementById("copyHtml");
+    var html = document.getElementById("preview").innerHTML;
+    copyTextToClipboard(html, btn);
+  }
+
+  // ===== イベント登録 =====
+  var btnMd = document.getElementById("copyMd");
+  if (btnMd) {
+    btnMd.addEventListener("click", function () { copyMarkdown(); });
+  }
+  var btnHtml = document.getElementById("copyHtml");
+  if (btnHtml) {
+    btnHtml.addEventListener("click", function () { copyHTML(); });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>住所入力で地図移動＋ピン追加</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; }
+    #controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+    #addr { flex: 1; min-width: 240px; padding: 8px; }
+    button { padding: 8px 12px; }
+    #map { width: 100%; height: 520px; margin: 10px 0; }
+    #msg { margin-top: 6px; color: #d00; font-size: 14px; min-height: 1em; }
+
+    .btn-row {
+      margin: 8px 0;      /* 行の上下のすき間 */
+      display: flex;
+      gap: 6px;           /* ボタン間のすき間 */
+      flex-wrap: wrap;    /* はみ出たら折り返し */
+    }
+  </style>
+</head>
+<body>
+  <h3>ボタンで移動＋右クリックでピン＋住所入力で移動</h3>
+
+  <!-- 住所入力フォーム -->
+  <div id="controls">
+    <input id="addr" placeholder="例：東京駅 / 大阪市北区 / 100-0005">
+    <button id="go">移動</button>
+    <button id="clear">ピンを全部消す</button>
+  </div>
+
+  <!-- 地図 -->
+  <div id="map"></div>
+
+  <!-- 固定の移動ボタン（リセット代わり） -->
+  <div class="btn-row">
+    <button onclick="moveTo(35.681236, 139.767125, '📍東京駅')">東京駅</button>
+    <button onclick="moveTo(34.693738, 135.502165, '📍大阪駅')">大阪駅</button>
+    <button onclick="moveTo(35.170915, 136.881537, '📍名古屋駅')">名古屋駅</button>
+ </div>
+
+  <div class="btn-row">
+    <button onclick="removeLastPin()">最後のピンを削除</button>
+    <button onclick="clearPins()">全部のピンを削除</button>
+  </div>
+
+  <div id="msg" aria-live="polite"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ===== 地図初期化 =====
+    const map = L.map('map').setView([35.681236, 139.767125], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+     }).addTo(map);
+
+    L.control.scale({ imperial: false }).addTo(map);
+
+    // 初期の基準ピン（東京駅）
+    let mainMarker = L.marker([35.681236, 139.767125]).addTo(map).bindPopup('📍東京駅').openPopup();
+
+    // 右クリックでピン追加（複数）
+    let markers = [];
+    map.on('contextmenu', function(e) {
+      const lat = e.latlng.lat.toFixed(6);
+      const lng = e.latlng.lng.toFixed(6);
+      const m = L.marker([lat, lng]).addTo(map).bindPopup('📍ピンを立てました<br>緯度:' + lat + '<br>経度:' + lng).openPopup();
+      markers.push(m);
+      console.log('ピン追加：' + lat + ', ' + lng);
+    });
+
+    // 固定ボタンで移動（基準ピンを動かす）
+    function moveTo(lat, lng, label) {
+      map.setView([lat, lng], 13);
+      mainMarker.setLatLng([lat, lng]).setPopupContent(label).openPopup();
+    }
+
+    // 最後のピンを削除
+    function removeLastPin() {
+      const last = markers.pop();
+      if (last) {
+        map.removeLayer(last);
+      } else {
+        alert('削除できるピンがありません！');
+      }
+    }
+
+    // 全部のピンを削除
+    function clearPins() {
+      markers.forEach(function(m) { map.removeLayer(m); });
+      markers = [];
+    }
+
+    // ===== 住所入力 → ジオコーディング → 地図移動＆ピン =====
+    const input = document.getElementById('addr');
+    const btnGo = document.getElementById('go');
+    const btnClear = document.getElementById('clear');
+    const msg = document.getElementById('msg');
+
+    btnGo.addEventListener('click', function () { geocodeAndMove(); });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        geocodeAndMove();
+      }
+    });
+    btnClear.addEventListener('click', function () { clearPins(); msg.textContent = ''; });
+
+    async function geocodeAndMove() {
+      const q = input.value.trim();
+      msg.textContent = '';
+      if (q.length === 0) {
+        msg.textContent = '住所を入力してください。';
+        return;
+      }
+
+      btnGo.disabled = true;
+      btnGo.textContent = '検索中…';
+
+      try {
+        // Nominatim（OpenStreetMapのジオコーダ）
+        const url = 'https://nominatim.openstreetmap.org/search'
+         + '?format=json'
+         + '&limit=1'
+         + '&countrycodes=jp'
+         + '&q=' + encodeURIComponent(q); + encodeURIComponent(q);
+
+        const res = await fetch(url, { headers: { 'Accept-Language': 'ja' } });
+        if (!res.ok) {
+          msg.textContent = '検索に失敗しました。時間をおいて再度ためしてください。';
+          btnGo.disabled = false; btnGo.textContent = '移動';
+          return;
+        }
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          msg.textContent = '見つかりませんでした。キーワードを変えてください。（例：郵便番号、区市町村名）';
+          btnGo.disabled = false; btnGo.textContent = '移動';
+          return;
+        }
+
+        const first = data[0];
+        const lat = parseFloat(first.lat);
+        const lon = parseFloat(first.lon);
+        const label = first.display_name;
+
+        // 地図移動（ズーム少し寄せる）
+        map.setView([lat, lon], 16);
+
+        // ピンを追加（削除ボタンで消せるよう配列に入れる）
+        const gm = L.marker([lat, lon]).addTo(map).bindPopup('📍 ' + label).openPopup();
+        markers.push(gm);
+
+      } catch (err) {
+        console.error(err);
+        msg.textContent = 'エラーが発生しました。ネットワークをご確認ください。';
+      } finally {
+        btnGo.disabled = false;
+        btnGo.textContent = '移動';
+      }
+    }
+  </script>
+</body>
+</html>
