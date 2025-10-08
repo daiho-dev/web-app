@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>サイト内検索</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <style>
+    body { font-family: system-ui, sans-serif; background:#f3f4f6; margin:0; }
+    .wrap { max-width:800px; margin:0 auto; padding:20px; }
+    h1 { margin-bottom:16px; }
+    .row { display:flex; gap:8px; margin-bottom:16px; }
+    input { flex:1; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:16px; }
+    button { padding:10px 16px; border:none; border-radius:8px; background:#2563eb; color:#fff; cursor:pointer; }
+    button:hover { background:#1d4ed8; }
+    .list { display:flex; flex-direction:column; gap:12px; }
+    .item { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:12px; }
+    .item a { color:#2563eb; font-weight:600; text-decoration:none; }
+    .item a:hover { text-decoration:underline; }
+    .small { font-size:13px; color:#6b7280; margin-top:4px; }
+    mark { background:#fef08a; padding:0 2px; border-radius:4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>サイト内検索</h1>
+    <div class="row">
+      <input id="kw" placeholder="キーワードを入力（例: ピン, Markdown, 質問）">
+      <button id="btnSearch">検索</button>
+      <button id="btnClear" style="background:#9ca3af;">クリア</button>
+    </div>
+    <div id="count" class="small"></div>
+    <div id="list" class="list"></div>
+  </div>
+
+  <script src="js/site-search.js"></script>
+</body>
+</html>
