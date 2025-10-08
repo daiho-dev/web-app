@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Web入門｜1ページで分かる</title>
+  <meta name="description" content="Webの定義、必要知識、学習順序、環境、主要技術、運用の注意、学習のコツまでを1ページで整理" />
+  <style>
+    :root {
+      --bg: #0f172a;         /* slate-900 */
+      --panel: #111827;      /* gray-900 */
+      --panel-2: #0b1220;    /* darker */
+      --text: #e5e7eb;       /* gray-200 */
+      --muted: #94a3b8;      /* slate-400 */
+      --brand: #60a5fa;      /* blue-400 */
+      --brand-2: #38bdf8;    /* sky-400 */
+      --ok: #34d399;         /* green-400 */
+      --warn: #fbbf24;       /* amber-400 */
+      --danger: #f87171;     /* red-400 */
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --maxw: 1080px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif;
+      line-height: 1.7;
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(56,189,248,.15), transparent),
+                  radial-gradient(1000px 700px at 120% 10%, rgba(96,165,250,.10), transparent),
+                  var(--bg);
+    }
+    a { color: var(--brand-2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header.hero {
+      position: relative; padding: 72px 16px 48px; border-bottom: 1px solid rgba(148,163,184,.2);
+      background: linear-gradient(180deg, rgba(17,24,39,.6), rgba(17,24,39,.2));
+    }
+    .wrap { max-width: var(--maxw); margin: 0 auto; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; }
+    .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, var(--brand), var(--brand-2)); box-shadow: 0 0 20px rgba(56,189,248,.6); }
+
+    nav.quicknav { display: none; gap: 12px; flex-wrap: wrap; }
+    nav.quicknav a { padding: 6px 10px; background: #0b1220; border-radius: 999px; border: 1px solid rgba(148,163,184,.2); }
+    @media (min-width: 900px) { nav.quicknav { display: flex; } }
+
+    .hero h1 { font-size: clamp(28px, 4vw, 44px); margin: 8px 0 12px; letter-spacing: .02em; }
+    .hero p.lead { color: var(--muted); margin: 0 0 20px; font-size: clamp(14px, 2.2vw, 18px); }
+    .cta { display: inline-block; padding: 12px 18px; border-radius: 12px; font-weight: 700; letter-spacing: .02em; background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #071018; box-shadow: var(--shadow); }
+    .cta:hover { opacity: .95; text-decoration: none; }
+
+    section { padding: 48px 16px; }
+    .card { background: linear-gradient(180deg, var(--panel), var(--panel-2)); border: 1px solid rgba(148,163,184,.18); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px; }
+    h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    h3 { font-size: 18px; margin: 22px 0 8px; }
+    ul { margin: 8px 0 16px 1.2em; }
+    li { margin: 6px 0; }
+
+    .grid { display: grid; gap: 18px; }
+    @media (min-width: 900px) { .grid.cols-2 { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 900px) { .grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; } }
+
+    .table { width: 100%; border-collapse: collapse; margin: 12px 0 6px; }
+    .table th, .table td { border: 1px solid rgba(148,163,184,.25); padding: 10px 12px; text-align: left; }
+    .table th { background: #0b1220; }
+
+    details { background: #0b1220; border: 1px solid rgba(148,163,184,.25); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
+    summary { cursor: pointer; font-weight: 700; }
+
+    footer { padding: 36px 16px; border-top: 1px solid rgba(148,163,184,.2); color: var(--muted); }
+
+    #backToTop { position: fixed; right: 16px; bottom: 16px; padding: 10px 12px; border-radius: 10px; background: #0b1220; border: 1px solid rgba(148,163,184,.25); color: var(--text); box-shadow: var(--shadow); cursor: pointer; display: none; }
+    #backToTop:hover { opacity: .9; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand"><span class="dot" aria-hidden="true"></span>Web入門</div>
+        <nav class="quicknav" aria-label="クイックリンク">
+          <a href="#basics">まず知る</a>
+          <a href="#stack">主要技術</a>
+          <a href="#ops">運用</a>
+          <a href="#learn">学習法</a>
+          <a href="#summary">要点</a>
+        </nav>
+      </div>
+      <h1>Webを<strong>かんたん</strong>に理解して、<br/>小さく作って公開しよう</h1>
+      <p class="lead">定義・知識・学習順序・環境・主要技術・運用・学習のコツまで。むずかしい言葉なしで1ページに整理。</p>
+      <a class="cta" href="#basics">学びを始める</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- web技術について：初心者がまず押さえるべきポイントと始め方 -->
+    <section id="basics" aria-labelledby="basics-title">
+      <div class="card">
+        <h2 id="basics-title">web技術について：初心者がまず押さえるべきポイントと始め方</h2>
+
+        <h3>定義</h3>
+        <p><strong>Web</strong>はブラウザで見るアプリやサイト。見た目を作る<strong>フロント</strong>（HTML・CSS・JavaScript）と、裏で動く<strong>サーバ</strong>がある。</p>
+
+        <h3>必要な知識</h3>
+        <ul>
+          <li><strong>HTML</strong>：文書の骨組み（見出し・段落・画像・リンク）。</li>
+          <li><strong>CSS</strong>：見た目（色・配置・余白・レスポンシブ）。</li>
+          <li><strong>JavaScript</strong>：動き（クリック処理・入力チェック・API通信）。</li>
+          <li>さらに少しだけ：HTTP、ブラウザの仕組み、Git。</li>
+        </ul>
+
+        <h3>学習の順序</h3>
+        <ol>
+          <li>HTMLの基本タグ</li>
+          <li>CSSのレイアウト（Flex / Grid / 余白）</li>
+          <li>JavaScriptのイベントとDOM操作</li>
+          <li>fetchでAPIからデータ取得</li>
+          <li>小さく作って公開→直すを回す</li>
+        </ol>
+
+        <h3>開発環境の準備</h3>
+        <ul>
+          <li>エディタ：VS Code</li>
+          <li>ブラウザ：Chrome（DevToolsで要素・通信を確認）</li>
+          <li>ローカル実行：Live Server拡張</li>
+          <li>バージョン管理：GitとGitHub</li>
+        </ul>
+
+        <h3>よくある疑問</h3>
+        <details>
+          <summary>勉強時間はどれくらい？</summary>
+          <p>1日30分でもOK。毎日が強い。</p>
+        </details>
+        <details>
+          <summary>デザインが苦手…</summary>
+          <p>最初はレイアウトだけでOK。配色は後で。</p>
+        </details>
+        <details>
+          <summary>フレームワークはいつ触る？</summary>
+          <p>素のJSに慣れてからで十分。</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- 現場で使われる主要技術の全体像 -->
+    <section id="stack" aria-labelledby="stack-title">
+      <div class="card">
+        <h2 id="stack-title">現場で使われる主要技術の全体像</h2>
+        <div class="grid cols-3">
+          <div>
+            <h3>HTML</h3>
+            <ul>
+              <li>主なタグ：&lt;header&gt; &lt;main&gt; &lt;section&gt; &lt;article&gt; &lt;nav&gt; &lt;footer&gt; &lt;h1&gt;〜&lt;h3&gt; &lt;p&gt; &lt;ul&gt; &lt;li&gt; &lt;a&gt; &lt;img&gt; &lt;form&gt;</li>
+              <li>ポイント：意味のあるタグを使う（SEO・アクセシビリティに効く）。</li>
+            </ul>
+          </div>
+          <div>
+            <h3>CSS</h3>
+            <ul>
+              <li>レイアウト：Flex（横並び/縦並び）、Grid（段組）</li>
+              <li>単位：rem、% 、vw（レスポンシブ）</li>
+              <li>余白：margin（外）、padding（内）</li>
+              <li>便利：カスタムプロパティ、メディアクエリ</li>
+            </ul>
+          </div>
+          <div>
+            <h3>JavaScript</h3>
+            <ul>
+              <li>DOM取得：document.querySelector()</li>
+              <li>イベント：addEventListener('click', ...)</li>
+              <li>通信：fetch('URL') → JSON</li>
+              <li>配列・オブジェクト・関数の基本を押さえる</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- プロジェクト運用で気を付けること -->
+    <section id="ops" aria-labelledby="ops-title">
+      <div class="card">
+        <h2 id="ops-title">プロジェクト運用で気を付けること</h2>
+        <div class="grid cols-3">
+          <div>
+            <h3>セキュリティ <span class="badge b-warn">重要</span></h3>
+            <ul>
+              <li>フォーム入力を必ずチェック</li>
+              <li>不要なデータは送らない・保存しない</li>
+              <li>鍵やパスワードは直書きしない（環境変数へ）</li>
+            </ul>
+          </div>
+          <div>
+            <h3>パフォーマンス</h3>
+            <ul>
+              <li>画像を軽く（WebP・サイズ適正）</li>
+              <li>不要なJS/CSSを削る・まとめる</li>
+              <li>重い処理は遅延させる</li>
+            </ul>
+          </div>
+          <div>
+            <h3>デプロイ</h3>
+            <ul>
+              <li>静的サイト：GitHub Pages / Netlify</li>
+              <li>動的が必要：レンタルサーバやクラウド</li>
+              <li>公開前チェック：リンク切れ・モバイル表示・タイトル/説明</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 学習効率を高める実践法 -->
+    <section id="learn" aria-labelledby="learn-title">
+      <div class="card">
+        <h2 id="learn-title">学習効率を高める実践法</h2>
+        <div class="grid cols-2">
+          <div>
+            <h3>教材の選び方</h3>
+            <ul>
+              <li>短い動画＋手書きノートで定着</li>
+              <li>MDNを少しずつ読む（用語の基準）</li>
+              <li>写経より小機能づくり（自分の言葉で書く）</li>
+            </ul>
+          </div>
+          <div>
+            <h3>実践課題</h3>
+            <ul>
+              <li>名刺サイト（1ページ、プロフィール＋リンク）</li>
+              <li>ToDo（追加・完了・削除）</li>
+              <li>天気カード（APIで取得して表示）</li>
+            </ul>
+            <p>共通ルール：公開→直すを1サイクルで回す。</p>
+          </div>
+        </div>
+        <div class="grid cols-2">
+          <div>
+            <h3>コミュニティ参加</h3>
+            <ul>
+              <li>X、Qiita、Zennに学びメモを投稿</li>
+              <li>GitHubで他人の小さなPRを読む</li>
+              <li>もくもく会で質問力を鍛える</li>
+            </ul>
+          </div>
+          <div>
+            <h3>初めての学習で最優先すべきこと</h3>
+            <ul>
+              <li>毎日触る（5分でもOK）</li>
+              <li>小さく公開（完成待ちにしない）</li>
+              <li>同じUIを3回作る（手を早く）</li>
+              <li>用語をメモ（自分の言葉で説明）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 要点まとめ -->
+    <section id="summary" aria-labelledby="summary-title">
+      <div class="card">
+        <h2 id="summary-title">初めての学習で最優先すべきこと（要点）</h2>
+        <ul>
+          <li>HTML→CSS→JSの順で手を動かす。</li>
+          <li>小さく作って公開、すぐ直す。</li>
+          <li>Gitで履歴を残し、学びを見える化。</li>
+          <li>用語は自分の言葉で説明できるまで。</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <div>© 2025 Web入門｜作成: あなた（AI助サポート）</div>
+  </footer>
+
+  <button id="backToTop" type="button" aria-label="ページ上部へ">▲ 上へ</button>
+
+  <script>
+    // 「上へ」ボタン（三項演算子は使わない）
+    (function () {
+      var btn = document.getElementById('backToTop');
+      function onScroll() {
+        if (window.scrollY > 400) {
+          btn.style.display = 'block';
+        } else {
+          btn.style.display = 'none';
+        }
+      }
+      function scrollTopSmooth() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      window.addEventListener('scroll', onScroll);
+      btn.addEventListener('click', scrollTopSmooth);
+      onScroll();
+    })();
+  </script>
+  <!-- 共通チャットボット埋め込み -->
+  <iframe
+    src="../chatbot.html"
+    aria-label="サイト共通チャットボット"
+    style="
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      width: min(92vw, 400px);
+      height: min(72vh, 600px);
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.28);
+      z-index: 9999;
+    "
+    loading="lazy"
+  ></iframe>
+</body>
+</html>

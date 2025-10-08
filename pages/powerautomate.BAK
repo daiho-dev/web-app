@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Power Automate 完全ガイド｜1ページで分かる</title>
+  <meta name="description" content="Power Automateの概要、導入前チェック、初期設定、実務手順、運用ポイント、FAQ、活用例までを1ページで解説" />
+  <style>
+    :root {
+      --bg: #0f172a;         /* slate-900 */
+      --panel: #111827;      /* gray-900 */
+      --panel-2: #0b1220;    /* darker */
+      --text: #e5e7eb;       /* gray-200 */
+      --muted: #94a3b8;      /* slate-400 */
+      --brand: #34d399;      /* green-400 */
+      --brand-2: #22d3ee;    /* cyan-400 */
+      --ok: #34d399;         /* green-400 */
+      --warn: #fbbf24;       /* amber-400 */
+      --danger: #f87171;     /* red-400 */
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --maxw: 1080px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif;
+      line-height: 1.7;
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(34,211,238,.15), transparent),
+                  radial-gradient(1000px 700px at 120% 10%, rgba(52,211,153,.10), transparent),
+                  var(--bg);
+    }
+    a { color: var(--brand-2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header.hero {
+      position: relative; padding: 72px 16px 48px; border-bottom: 1px solid rgba(148,163,184,.2);
+      background: linear-gradient(180deg, rgba(17,24,39,.6), rgba(17,24,39,.2));
+    }
+    .wrap { max-width: var(--maxw); margin: 0 auto; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; }
+    .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, var(--brand), var(--brand-2)); box-shadow: 0 0 20px rgba(56,189,248,.6); }
+
+    nav.quicknav { display: none; gap: 12px; flex-wrap: wrap; }
+    nav.quicknav a { padding: 6px 10px; background: #0b1220; border-radius: 999px; border: 1px solid rgba(148,163,184,.2); }
+    @media (min-width: 900px) { nav.quicknav { display: flex; } }
+
+    .hero h1 { font-size: clamp(28px, 4vw, 44px); margin: 8px 0 12px; letter-spacing: .02em; }
+    .hero p.lead { color: var(--muted); margin: 0 0 20px; font-size: clamp(14px, 2.2vw, 18px); }
+    .cta { display: inline-block; padding: 12px 18px; border-radius: 12px; font-weight: 700; letter-spacing: .02em; background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #071018; box-shadow: var(--shadow); }
+    .cta:hover { opacity: .95; text-decoration: none; }
+
+    section { padding: 48px 16px; }
+    .card { background: linear-gradient(180deg, var(--panel), var(--panel-2)); border: 1px solid rgba(148,163,184,.18); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px; }
+    h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    h3 { font-size: 18px; margin: 22px 0 8px; }
+    ul { margin: 8px 0 16px 1.2em; }
+    li { margin: 6px 0; }
+
+    .grid { display: grid; gap: 18px; }
+    @media (min-width: 900px) { .grid.cols-2 { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 900px) { .grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; } }
+
+    .table { width: 100%; border-collapse: collapse; margin: 12px 0 6px; }
+    .table th, .table td { border: 1px solid rgba(148,163,184,.25); padding: 10px 12px; text-align: left; }
+    .table th { background: #0b1220; }
+
+    details { background: #0b1220; border: 1px solid rgba(148,163,184,.25); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
+    summary { cursor: pointer; font-weight: 700; }
+
+    footer { padding: 36px 16px; border-top: 1px solid rgba(148,163,184,.2); color: var(--muted); }
+
+    #backToTop { position: fixed; right: 16px; bottom: 16px; padding: 10px 12px; border-radius: 10px; background: #0b1220; border: 1px solid rgba(148,163,184,.25); color: var(--text); box-shadow: var(--shadow); cursor: pointer; display: none; }
+    #backToTop:hover { opacity: .9; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand"><span class="dot" aria-hidden="true"></span>Power Automate 完全ガイド</div>
+        <nav class="quicknav" aria-label="クイックリンク">
+          <a href="#guide">ガイド</a>
+          <a href="#precheck">導入前チェック</a>
+          <a href="#start">使い始め</a>
+          <a href="#ops">運用</a>
+          <a href="#summary">要点</a>
+        </nav>
+      </div>
+      <h1>Power Automateを<strong>かんたん</strong>に理解して、<br/>明日から業務を自動化しよう</h1>
+      <p class="lead">概要、導入前の確認、初期設定、実務の進め方、運用とセキュリティまで。むずかしい言葉なしで1ページに整理。</p>
+      <a class="cta" href="#guide">学びを始める</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- Power Automateの疑問を解消する完全ガイド -->
+    <section id="guide" aria-labelledby="guide-title">
+      <div class="card">
+        <h2 id="guide-title">Power Autometeの疑問を解消する完全ガイド</h2>
+        <h3>概要</h3>
+        <p>Power AutomateはMicrosoftの自動化プラットフォーム。Excel、Outlook、Teams、SharePointなどの操作を自動でつなげられる。ノーコードで使えるのが特長で、「メールで届いた内容をTeamsに通知」「Excelの更新で集計」などを手軽に実現できる。</p>
+
+        <h3>導入前の確認事項</h3>
+        <ul>
+          <li><strong>目的の明確化</strong>：どの作業を減らしたいか（例：問い合わせ対応、ファイル整理）。</li>
+          <li><strong>利用範囲</strong>：個人、部署、全社のどれかで方針が変わる。</li>
+          <li><strong>ライセンスと環境</strong>：Microsoft 365の契約や社内ネットワークの制限を確認。</li>
+        </ul>
+
+        <h3>初期設定</h3>
+        <ol>
+          <li>Microsoft 365 アカウントでサインイン</li>
+          <li>Power Automate ポータルへアクセス</li>
+          <li>「マイ フロー」から新規作成</li>
+          <li>テンプレート利用 or ゼロから構築</li>
+        </ol>
+
+        <h3>よくある質問</h3>
+        <details>
+          <summary>Desktopとクラウド版の違いは？</summary>
+          <p>Desktopはパソコン内の操作を自動化。クラウド版はオンラインサービス同士をつなぐのが得意。</p>
+        </details>
+        <details>
+          <summary>ExcelやTeamsとの連携はむずかしい？</summary>
+          <p>ドラッグ＆ドロップ中心で、数時間触れば慣れやすい。</p>
+        </details>
+        <details>
+          <summary>有料？</summary>
+          <p>Microsoft 365に含まれる範囲は無料。外部連携や高度機能は有料プランが必要。</p>
+        </details>
+
+        <h3>活用例</h3>
+        <div class="grid cols-3">
+          <div>
+            <ul>
+              <li>メール受信→Teamsに自動通知</li>
+              <li>フォーム回答→Excelへ自動追記</li>
+              <li>承認ワークフローの自動化</li>
+            </ul>
+          </div>
+          <div>
+            <ul>
+              <li>ファイルの自動分類</li>
+              <li>会議録の文字起こしと要約</li>
+              <li>定時のレポート生成</li>
+            </ul>
+          </div>
+          <div>
+            <ul>
+              <li>スケジュールの自動調整</li>
+              <li>アラートの自動送信</li>
+              <li>他SaaSとの連携（Premium機能）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 導入前に確認すべきこと -->
+    <section id="precheck" aria-labelledby="precheck-title">
+      <div class="card">
+        <h2 id="precheck-title">導入前に確認すべきこと</h2>
+        <div class="grid cols-3">
+          <div>
+            <h3>ライセンス</h3>
+            <table class="table" aria-label="ライセンス表">
+              <thead><tr><th>プラン</th><th>主な特徴</th><th>月額目安</th></tr></thead>
+              <tbody>
+                <tr><td>Microsoft 365 標準</td><td>Outlook/Teams/SharePoint等の基本連携</td><td>既存契約内</td></tr>
+                <tr><td>Premium</td><td>外部SaaS連携・AI機能</td><td>約1,800円〜</td></tr>
+                <tr><td>Attended/Unattended RPA</td><td>デスクトップ操作の自動化</td><td>約5,000円〜</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h3>環境要件</h3>
+            <ul>
+              <li>クラウド版：主要ブラウザで動作</li>
+              <li>Desktop：Windows 10以上</li>
+              <li>ネットワーク：社内ポリシーの制限に注意</li>
+            </ul>
+          </div>
+          <div>
+            <h3>権限設定</h3>
+            <ul>
+              <li>管理者承認が必要な場合あり</li>
+              <li>SharePoint/Teamsのアクセス権を確認</li>
+              <li>外部連携のアプリ承認を準備</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 実務で使い始める手順 -->
+    <section id="start" aria-labelledby="start-title">
+      <div class="card">
+        <h2 id="start-title">実務で使い始める手順</h2>
+        <div class="grid cols-2">
+          <div>
+            <h3>フロー作成</h3>
+            <p>基本は「トリガー」と「アクション」。トリガーで動き出し、アクションで処理する。まずはテンプレートで全体像をつかむと理解が早い。</p>
+          </div>
+          <div>
+            <h3>テンプレート活用</h3>
+            <ul>
+              <li>Outlook：自動返信、添付の保存</li>
+              <li>Excel：データ追加→通知</li>
+              <li>Teams：定時の投稿やリマインド</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grid cols-2">
+          <div>
+            <h3>エラー対応</h3>
+            <ul>
+              <li>接続エラー：認証切れを再ログイン</li>
+              <li>アクション失敗：入力不足や型違いを確認</li>
+              <li>停止：上限回数や期限切れを見直し</li>
+            </ul>
+            <p>詳細は「実行履歴」から失敗箇所を開いて確認。</p>
+          </div>
+          <div>
+            <h3>小さく始めて広げる</h3>
+            <p>まずは一つの業務でPoC（小さな実験）。うまくいけば周辺へ拡大し、失敗しても学びが残る形にする。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 運用で押さえるポイント -->
+    <section id="ops" aria-labelledby="ops-title">
+      <div class="card">
+        <h2 id="ops-title">運用で押さえるポイント</h2>
+        <div class="grid cols-3">
+          <div>
+            <h3>監視 <span class="badge" style="background: var(--warn); color:#0b1220;">重要</span></h3>
+            <ul>
+              <li>実行回数と失敗率を毎週チェック</li>
+              <li>失敗が増えたら原因を切り分け</li>
+              <li>通知ルールを設定して早期発見</li>
+            </ul>
+          </div>
+          <div>
+            <h3>ログ管理</h3>
+            <ul>
+              <li>実行履歴を定期エクスポート</li>
+              <li>監査が必要な業務では保存を徹底</li>
+              <li>変更履歴を残して再現性を確保</li>
+            </ul>
+          </div>
+          <div>
+            <h3>セキュリティ</h3>
+            <ul>
+              <li>外部共有の制限</li>
+              <li>APIキーやパスワードは安全に保管</li>
+              <li>不要フローは削除してリスク低減</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 要点まとめ -->
+    <section id="summary" aria-labelledby="summary-title">
+      <div class="card">
+        <h2 id="summary-title">要点の整理</h2>
+        <ul>
+          <li>Power AutomateはMicrosoftの自動化基盤。</li>
+          <li>無料でも十分。外部連携や高度機能は有料。</li>
+          <li>フローは「トリガー＋アクション」で設計。</li>
+          <li>監視・ログ・セキュリティで安定運用。</li>
+          <li>小さく始め、効果が出たら広げる。</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <div>© 2025 Power Automate 完全ガイド｜作成: あなた（AI助サポート）</div>
+  </footer>
+
+  <button id="backToTop" type="button" aria-label="ページ上部へ">▲ 上へ</button>
+
+  <script>
+    // 「上へ」ボタン（三項演算子は使わない）
+    (function () {
+      var btn = document.getElementById('backToTop');
+      function onScroll() {
+        if (window.scrollY > 400) {
+          btn.style.display = 'block';
+        } else {
+          btn.style.display = 'none';
+        }
+      }
+      function scrollTopSmooth() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      window.addEventListener('scroll', onScroll);
+      btn.addEventListener('click', scrollTopSmooth);
+      onScroll();
+    })();
+  </script>
+</body>
+</html>
