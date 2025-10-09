@@ -16,7 +16,7 @@
 | [データゆらぎと可視化](https://daiho-dev.github.io/web-app/pages/data-yuragi.html) | データ整理・PowerBI的可視化の考え方 |
 | [Power Automate入門](https://daiho-dev.github.io/web-app/pages/powerautomate.html) | 自動化・フロー設計の基礎 |
 | [Web入門](https://daiho-dev.github.io/web-app/pages/web.html) | HTML / CSS / JavaScriptの基本 |
-| [ツール集](https://daiho-dev.github.io/web-app/pages/tool.html) | CSV整理や画像圧縮などブラウザ完結ツール |
+| [ツール集](https://daiho-dev.github.io/web-app/tool.html) | CSV整理や画像圧縮などブラウザ完結ツール |
 
 ---
 
@@ -45,8 +45,8 @@ web-app/
 │   ├── ai.html             # AI入門ページ
 │   ├── powerautomate.html  # Power Automate入門
 │   ├── web.html            # Web入門
-│   ├── data-yuragi.html    # データゆらぎ解説
-│   └── tool.html           # CSVや画像ツール
+│   └── data-yuragi.html    # データゆらぎ解説
+│   
 ├── js/
 │   └── chat.js             # チャットボットの動作スクリプト
 ├── css/
@@ -54,9 +54,6 @@ web-app/
 └── assets/
     └── images/             # 画像素材
 </pre>
-
-
-
 ---
 
 ## 🪪 ライセンス
@@ -83,7 +80,7 @@ published via **GitHub Pages**, focusing on AI, automation, web fundamentals, an
 | [Data Normalization & Visualization](https://daiho-dev.github.io/web-app/pages/data-yuragi.html) | How to clean and visualize data |
 | [Power Automate Intro](https://daiho-dev.github.io/web-app/pages/powerautomate.html) | Basics of automation workflows |
 | [Web Basics](https://daiho-dev.github.io/web-app/pages/web.html) | Learn HTML, CSS, and JavaScript |
-| [Tool Collection](https://daiho-dev.github.io/web-app/pages/tool.html) | Browser-based utilities (CSV & Image tools) |
+| [Tool Collection](https://daiho-dev.github.io/web-app/tool.html) | Browser-based utilities (CSV & Image tools) |
 
 ---
 
