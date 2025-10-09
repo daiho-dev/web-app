@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>データ整理と可視化｜BI共通のゆらぎ対策を1ページで</title>
+  <meta name="description" content="Power BI / Tableau / Looker などで正しく見せるためのデータ整理入門。ゆらぎ対策、手順、実例、運用のコツを1ページで。" />
+  <style>
+    :root {
+      /* ai.html に合わせたテーマ変数 */
+      --bg: #0f172a;         /* slate-900 */
+      --panel: #111827;      /* gray-900 */
+      --panel-2: #0b1220;    /* darker */
+      --text: #e5e7eb;       /* gray-200 */
+      --muted: #94a3b8;      /* slate-400 */
+      --brand: #60a5fa;      /* blue-400 */
+      --brand-2: #38bdf8;    /* sky-400 */
+      --ok: #34d399;         /* green-400 */
+      --warn: #fbbf24;       /* amber-400 */
+      --danger: #f87171;     /* red-400 */
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --maxw: 1080px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif;
+      line-height: 1.7;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% -10%, rgba(56,189,248,.15), transparent),
+        radial-gradient(1000px 700px at 120% 10%, rgba(96,165,250,.10), transparent),
+        var(--bg);
+    }
+    a { color: var(--brand-2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Header / Hero */
+    header.hero {
+      position: relative;
+      padding: 72px 16px 48px;
+      border-bottom: 1px solid rgba(148,163,184,.2);
+      background: linear-gradient(180deg, rgba(17,24,39,.6), rgba(17,24,39,.2));
+    }
+    .wrap { max-width: var(--maxw); margin: 0 auto; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; margin-bottom: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; }
+    .brand .dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 0 20px rgba(56,189,248,.6);
+    }
+
+    nav.quicknav { display: none; gap: 12px; flex-wrap: wrap; }
+    nav.quicknav a { padding: 6px 10px; background: #0b1220; border-radius: 999px; border: 1px solid rgba(148,163,184,.2); }
+    @media (min-width: 900px) { nav.quicknav { display: flex; } }
+
+    .hero h1 { font-size: clamp(26px, 4vw, 42px); margin: 8px 0 12px; letter-spacing: .02em; }
+    .hero p.lead { color: var(--muted); margin: 0 0 20px; font-size: clamp(14px, 2.2vw, 18px); }
+    .cta { display: inline-block; padding: 12px 18px; border-radius: 12px; font-weight: 700; letter-spacing: .02em;
+           background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #071018; box-shadow: var(--shadow); }
+    .cta:hover { opacity: .95; text-decoration: none; }
+
+    /* Sections / Cards */
+    section { padding: 48px 16px; }
+    .card {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid rgba(148,163,184,.18);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+    h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    h3 { font-size: 18px; margin: 22px 0 8px; }
+    ul { margin: 8px 0 16px 1.2em; }
+    li { margin: 6px 0; }
+
+    .grid { display: grid; gap: 18px; }
+    @media (min-width: 900px) { .grid.cols-2 { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 900px) { .grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; } }
+
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; color: #0b1220; font-weight: 700; }
+    .b-ok { background: var(--ok); }
+    .b-warn { background: var(--warn); }
+    .b-danger { background: var(--danger); }
+
+    .table { width: 100%; border-collapse: collapse; margin: 12px 0 6px; }
+    .table th, .table td { border: 1px solid rgba(148,163,184,.25); padding: 10px 12px; text-align: left; }
+    .table th { background: #0b1220; }
+
+    details { background: #0b1220; border: 1px solid rgba(148,163,184,.25); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
+    summary { cursor: pointer; font-weight: 700; }
+
+    /* Footer */
+    footer { padding: 36px 16px; border-top: 1px solid rgba(148,163,184,.2); color: var(--muted); }
+
+    /* Back to top */
+    #backToTop {
+      position: fixed; right: 16px; bottom: 16px; padding: 10px 12px; border-radius: 10px;
+      background: #0b1220; border: 1px solid rgba(148,163,184,.25); color: var(--text);
+      box-shadow: var(--shadow); cursor: pointer; display: none;
+    }
+    #backToTop:hover { opacity: .9; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand"><span class="dot" aria-hidden="true"></span>データ整理ガイド</div>
+        <nav class="quicknav" aria-label="クイックリンク">
+          <a href="#about">データとは</a>
+          <a href="#steps">整理手順</a>
+          <a href="#tools">ツール</a>
+          <a href="#examples">実例</a>
+          <a href="#ops">運用のコツ</a>
+          <a href="#summary">要点</a>
+        </nav>
+      </div>
+      <h1>BIの前に、まずは<strong>ゆらぎ取り</strong>。<br>整えれば、グラフは素直になる。</h1>
+      <p class="lead">Power BI / Tableau / Looker など、どのツールでも通用する「データ整理の基本」を1ページで。</p>
+      <a class="cta" href="#about">ここから学ぶ</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- 0. データとは / ゆらぎ -->
+    <section id="about" aria-labelledby="about-title">
+      <div class="card">
+        <h2 id="about-title">データとは？ まずは「ゆらぎ」を知る</h2>
+        <div class="grid cols-2">
+          <div>
+            <h3>よくある ゆらぎ</h3>
+            <ul>
+              <li>表記ちがい：東京 / とうきょう / TOKYO</li>
+              <li>日付ちがい：2025/10/09 と 10-09-2025 と 2025年10月9日</li>
+              <li>単位ちがい：円 と USD が混ざる</li>
+              <li>欠損・重複：空欄・同じ顧客が2行</li>
+            </ul>
+            <p class="note" style="color:var(--muted)">同じ意味なのに形が違うと、集計が分かれる。ここを直すのが第一歩。</p>
+          </div>
+          <div>
+            <h3>時間の目安</h3>
+            <table class="table" aria-label="時間の目安">
+              <thead><tr><th>項目</th><th>目安</th><th>コメント</th></tr></thead>
+              <tbody>
+                <tr><td>整理の比率</td><td>60〜80%</td><td>分析時間の多くを占める</td></tr>
+                <tr><td>効果</td><td>高い</td><td>一度やれば更新が速くなる</td></tr>
+                <tr><td>再利用性</td><td>◎</td><td>手順を保存→自動更新</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1. 整理手順 -->
+    <section id="steps" aria-labelledby="steps-title">
+      <div class="card">
+        <h2 id="steps-title">整理の手順（どのBIでも共通）</h2>
+        <ol>
+          <li>不要な列を消す</li>
+          <li>列名をそろえる（日本語でもOK）</li>
+          <li>型をつける（数値 / 文字 / 日付）</li>
+          <li>欠損を処理（補完 or 削除）</li>
+          <li>重複を削除</li>
+          <li>表記を統一（置換）</li>
+          <li>単位を統一（通貨・桁）</li>
+        </ol>
+
+        <div class="grid cols-2">
+          <div>
+            <h3>Power Query のヒント</h3>
+            <ul>
+              <li>「列の型の変更」で型を固定</li>
+              <li>「値の置換」で表記統一</li>
+              <li>「重複の削除」で主キー単位にそろえる</li>
+              <li>右ペインに手順が残る → 次回は更新だけ</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Python（pandas）例</h3>
+            <details>
+              <summary>サンプルコードをひらく</summary>
+<pre><code>import pandas as pd
+
+df = pd.DataFrame({
+  "顧客": ["東京","とうきょう","TOKYO"],
+  "日付": ["2025/10/01","10-02-2025","2025年10月03日"],
+  "金額": [1000, 2000, 3000],
+  "通貨": ["JPY","JPY","JPY"]
+})
+
+# 表記ゆらぎ統一
+df["顧客"] = df["顧客"].replace({"とうきょう":"東京","TOKYO":"東京"})
+
+# 日付を統一
+df["日付"] = pd.to_datetime(df["日付"], errors="coerce")
+df["日付"] = df["日付"].dt.strftime("%Y/%m/%d")
+
+# 型チェック
+df["金額"] = pd.to_numeric(df["金額"], errors="coerce")
+print(df)</code></pre>
+            </details>
+            <p class="note" style="color:var(--muted)">コードなしでもPower QueryだけでOK。必要なら併用。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. ツール立ち位置 -->
+    <section id="tools" aria-labelledby="tools-title">
+      <div class="card">
+        <h2 id="tools-title">ツールの立ち位置（ざっくり）</h2>
+        <table class="table" aria-label="ツールの立ち位置">
+          <thead><tr><th>種類</th><th>ツール</th><th>主な役目</th></tr></thead>
+          <tbody>
+            <tr><td>可視化</td><td>Power BI / Tableau / Looker Studio / Metabase</td><td>見せる・共有・ダッシュボード</td></tr>
+            <tr><td>整形</td><td>Power Query / Python（pandas）/ R / Alteryx</td><td>型・欠損・ゆらぎ修正</td></tr>
+            <tr><td>保管</td><td>Excel / CSV / DB / DWH</td><td>ためる・配る・更新を安定化</td></tr>
+          </tbody>
+        </table>
+        <p class="note" style="color:var(--muted)">Snowflake などのDWHは「保管・配る」側。今回は対象外。</p>
+      </div>
+    </section>
+
+    <!-- 3. 実例 before/after ＋ かんたん可視化 -->
+    <section id="examples" aria-labelledby="examples-title">
+      <div class="card">
+        <h2 id="examples-title">実例：before → after</h2>
+        <div class="grid cols-2">
+          <div>
+            <h3>整理前</h3>
+            <table class="table" aria-label="整理前">
+              <thead><tr><th>顧客</th><th>日付</th><th>金額</th></tr></thead>
+              <tbody>
+                <tr><td>東京</td><td>2025/10/01</td><td>1000</td></tr>
+                <tr><td>とうきょう</td><td>10-02-2025</td><td>2000</td></tr>
+                <tr><td>TOKYO</td><td>2025年10月03日</td><td>3000</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h3>整理後</h3>
+            <table class="table" aria-label="整理後">
+              <thead><tr><th>顧客</th><th>日付</th><th>金額（円）</th></tr></thead>
+              <tbody>
+                <tr><td>東京</td><td>2025/10/01</td><td>1000</td></tr>
+                <tr><td>東京</td><td>2025/10/02</td><td>2000</td></tr>
+                <tr><td>東京</td><td>2025/10/03</td><td>3000</td></tr>
+              </tbody>
+            </table>
+            <p class="note" style="color:var(--muted)">これで「東京の売上」を正しく合計・推移で見せられる。</p>
+          </div>
+        </div>
+
+        <h3>かんたん可視化（CSSバー）</h3>
+        <div class="grid">
+          <div>
+            <div style="display:flex;justify-content:space-between"><span>2025/10/01</span><span>1,000</span></div>
+            <div style="height:10px;border:1px solid rgba(148,163,184,.25);border-radius:6px;overflow:hidden;background:#0b1220"><i style="display:block;height:100%;width:33%;background:#34d399"></i></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between"><span>2025/10/02</span><span>2,000</span></div>
+            <div style="height:10px;border:1px solid rgba(148,163,184,.25);border-radius:6px;overflow:hidden;background:#0b1220"><i style="display:block;height:100%;width:66%;background:#34d399"></i></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between"><span>2025/10/03</span><span>3,000</span></div>
+            <div style="height:10px;border:1px solid rgba(148,163,184,.25);border-radius:6px;overflow:hidden;background:#0b1220"><i style="display:block;height:100%;width:100%;background:#34d399"></i></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 運用のコツ -->
+    <section id="ops" aria-labelledby="ops-title">
+      <div class="card">
+        <h2 id="ops-title">運用のコツ（時短）</h2>
+        <div class="grid cols-3">
+          <div>
+            <h3>手順は残す</h3>
+            <ul>
+              <li>Power Query のステップを保存</li>
+              <li>更新ボタンで再実行できる形に</li>
+            </ul>
+          </div>
+          <div>
+            <h3>きまりを作る</h3>
+            <ul>
+              <li>列名・型・単位のルール化</li>
+              <li>入力を自動化してミス減らす</li>
+            </ul>
+          </div>
+          <div>
+            <h3>記録を残す</h3>
+            <ul>
+              <li>どの為替レートか、いつの時点か</li>
+              <li>集計の前提をメモに残す</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 要点 -->
+    <section id="summary" aria-labelledby="summary-title">
+      <div class="card">
+        <h2 id="summary-title">重要ポイントを短く整理</h2>
+        <ul>
+          <li>成功のカギは「データの質」。ゆらぎ取りが先。</li>
+          <li>初回は時間がかかるが、手順保存で次回は速い。</li>
+          <li>ツール差よりも「整ったデータ」が結果の8割を決める。</li>
+        </ul>
+        <a href="#about">▲ はじめへ</a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="wrap">
+    <div>© 2025 データ整理ガイド｜作成: あなた（AI助サポート）</div>
+  </footer>
+
+  <button id="backToTop" type="button" aria-label="ページ上部へ">▲ 上へ</button>
+
+  <script>
+    // 「上へ」ボタン（ai.htmlと同じ作法 / 三項演算子は使わない）
+    (function () {
+      var btn = document.getElementById('backToTop');
+      function onScroll() {
+        if (window.scrollY > 400) {
+          btn.style.display = 'block';
+        } else {
+          btn.style.display = 'none';
+        }
+      }
+      function scrollTopSmooth() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      window.addEventListener('scroll', onScroll);
+      btn.addEventListener('click', scrollTopSmooth);
+      onScroll();
+    })();
+  </script>
+  <!-- 共通チャットボット埋め込み -->
+  <iframe
+    src="../chatbot.html"
+    aria-label="サイト共通チャットボット"
+    style="
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      width: min(92vw, 400px);
+      height: min(72vh, 600px);
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.28);
+      z-index: 9999;
+    "
+    loading="lazy"
+  ></iframe>
+</body>
+</html>
