@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ツール集｜CSVゆらぎ整理 & 画像圧縮</title>
+  <meta name="description" content="ユーザーがアップロードしたファイルをブラウザ内で加工するツール集。CSVゆらぎ整理、画像圧縮・リサイズ。">
+  <style>
+    :root{
+      --bg:#0f172a; --panel:#111827; --panel2:#0b1220;
+      --text:#e5e7eb; --muted:#94a3b8;
+      --brand:#60a5fa; --brand2:#38bdf8; --ok:#34d399;
+      --radius:16px; --shadow:0 10px 30px rgba(0,0,0,.35); --maxw:1080px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
+      line-height:1.7; color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% -10%, rgba(56,189,248,.15), transparent),
+        radial-gradient(1000px 700px at 120% 10%, rgba(96,165,250,.10), transparent),
+        var(--bg);
+    }
+    a{color:var(--brand2); text-decoration:none} a:hover{text-decoration:underline}
+    .wrap{max-width:var(--maxw); margin:0 auto; padding:72px 16px 48px}
+    header{border-bottom:1px solid rgba(148,163,184,.2); background:linear-gradient(180deg, rgba(17,24,39,.6), rgba(17,24,39,.2))}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:700}
+    .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--brand2));box-shadow:0 0 20px rgba(56,189,248,.6)}
+    h1{font-size:clamp(26px,4vw,42px);margin:8px 0 12px;letter-spacing:.02em}
+    p.lead{color:var(--muted);margin:0 0 20px}
+    .grid{display:grid;gap:18px}
+    @media(min-width:900px){.cols-2{grid-template-columns:1fr 1fr}}
+    section{padding:36px 16px}
+    .card{background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid rgba(148,163,184,.18); border-radius:var(--radius); box-shadow:var(--shadow); padding:24px}
+    h2{font-size:clamp(22px,3vw,28px);margin:0 0 12px}
+    h3{font-size:18px;margin:18px 0 8px}
+    label{display:block;margin:10px 0 6px}
+    input[type="file"], input[type="number"], input[type="text"], select{
+      width:100%; background:#0b1220; color:var(--text); border:1px solid rgba(148,163,184,.25); border-radius:10px; padding:10px
+    }
+    textarea{width:100%;min-height:120px;background:#0b1220;color:var(--text);border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:10px}
+    .btn{display:inline-block;padding:10px 14px;border-radius:12px;font-weight:700;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#071018;box-shadow:var(--shadow);border:none;cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .muted{color:var(--muted);font-size:13px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > *{flex:1}
+    .table{width:100%;border-collapse:collapse;margin-top:10px}
+    .table th,.table td{border:1px solid rgba(148,163,184,.25);padding:8px 10px;text-align:left}
+    .table th{background:#0b1220}
+    footer{padding:28px 16px;border-top:1px solid rgba(148,163,184,.2);color:var(--muted)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="top">
+        <div class="brand"><span class="dot" aria-hidden="true"></span>ツール集</div>
+        <nav class="muted"><a href="./ai.html">AI入門</a> / <a href="./data-yuragi.html">データゆらぎ</a></nav>
+      </div>
+      <h1>アップロード加工ツール（ブラウザ内で完結）</h1>
+      <p class="lead">データは外部送信しないで処理。学習と実務で使える小型ツールを増やしていこう。</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="csv-cleaner">
+      <div class="card">
+        <h2>CSVゆらぎクリーナー</h2>
+        <p class="muted">表記ゆらぎ・日付統一・重複削除をまとめて実行。※カンマ区切りのシンプルCSVを想定。</p>
+
+        <div class="row">
+          <div>
+            <label for="csvFile">CSVファイルを選択</label>
+            <input id="csvFile" type="file" accept=".csv,text/csv" />
+          </div>
+          <div>
+            <label for="dateCol">日付カラム名（例: 日付）</label>
+            <input id="dateCol" type="text" placeholder="日付" />
+          </div>
+          <div>
+            <label for="keyCols">重複チェックのカラム（カンマ区切り）</label>
+            <input id="keyCols" type="text" placeholder="顧客,日付" />
+          </div>
+        </div>
+
+        <label for="normalizeMap">表記ゆらぎ辞書（JSON形式）</label>
+        <textarea id="normalizeMap" placeholder='{"とうきょう":"東京","TOKYO":"東京"}'></textarea>
+
+        <div class="row">
+          <button id="runCsv" class="btn">整理を実行</button>
+          <button id="downloadCsv" class="btn" disabled>結果をダウンロード</button>
+        </div>
+
+        <table class="table" aria-label="プレビュー">
+          <thead id="previewHead"></thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+        <p class="muted" id="csvNote">未読込</p>
+      </div>
+    </section>
+
+    <section id="image-tool">
+      <div class="card">
+        <h2>画像リサイズ & 圧縮</h2>
+        <p class="muted">ブログ用の軽量化。長辺基準で縮小、JPEG品質で圧縮。ブラウザ内で処理。</p>
+
+        <div class="row">
+          <div>
+            <label for="imgFile">画像を選択（jpg/png）</label>
+            <input id="imgFile" type="file" accept="image/*" />
+          </div>
+          <div>
+            <label for="longSide">長辺(px)</label>
+            <input id="longSide" type="number" value="1280" min="200" max="8000" />
+          </div>
+          <div>
+            <label for="quality">JPEG品質（0.1〜1.0）</label>
+            <input id="quality" type="number" value="0.8" step="0.05" min="0.1" max="1.0" />
+          </div>
+        </div>
+
+        <div class="row">
+          <button id="runImg" class="btn">画像を圧縮</button>
+          <a id="downloadImg" class="btn" download="optimized.jpg" style="display:none">画像を保存</a>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <h3>元画像</h3>
+            <img id="previewOrig" alt="" style="max-width:100%;border:1px solid rgba(148,163,184,.25);border-radius:10px"/>
+          </div>
+          <div>
+            <h3>結果</h3>
+            <img id="previewOut" alt="" style="max-width:100%;border:1px solid rgba(148,163,184,.25);border-radius:10px"/>
+          </div>
+        </div>
+
+        <p class="muted" id="imgNote">未処理</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <div class="muted">© 2025 ツール集｜作成: あなた（AI助サポート）</div>
+  </footer>
+
+  <!-- 上へボタン（必要なら） -->
+  <button id="backToTop" type="button" aria-label="ページ上部へ" style="
+    position: fixed; right: 16px; bottom: 16px; padding: 10px 12px; border-radius: 10px;
+    background: #0b1220; border: 1px solid rgba(148,163,184,.25); color: var(--text);
+    box-shadow: var(--shadow); cursor: pointer; display: none;">▲ 上へ</button>
+
+  <!-- 共通チャットボット（必要なら） -->
+  <iframe
+    src="./chatbot.html"
+    aria-label="サイト共通チャットボット"
+    style="position: fixed; right: 20px; bottom: 20px; width: min(92vw, 400px); height: min(72vh, 600px);
+      border: none; border-radius: 12px; box-shadow: 0 10px 28px rgba(0,0,0,.28); z-index: 9999;"
+    loading="lazy"></iframe>
+
+  <script>
+    // ▲ 上へ
+    (function(){
+      var btn = document.getElementById('backToTop');
+      function onScroll(){
+        if(window.scrollY > 400){ btn.style.display = 'block'; }
+        else{ btn.style.display = 'none'; }
+      }
+      function scrollTopSmooth(){ window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      window.addEventListener('scroll', onScroll);
+      btn.addEventListener('click', scrollTopSmooth);
+      onScroll();
+    })();
+
+    // -------------- CSV ゆらぎクリーナー --------------
+    // シンプルCSVパーサ（引用符や改行を含む複雑CSVは非対応）
+    function parseCsvSimple(text){
+      var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+      var rows = [];
+      var i = 0;
+      while(i < lines.length){
+        var line = lines[i];
+        if(line.trim() === ''){ i = i + 1; continue; }
+        var cols = line.split(',');
+        rows.push(cols);
+        i = i + 1;
+      }
+      return rows;
+    }
+
+    function toCsv(rows){
+      var out = '';
+      var i = 0;
+      while(i < rows.length){
+        var row = rows[i];
+        var j = 0;
+        var parts = [];
+        while(j < row.length){
+          var cell = String(row[j]);
+          if(cell.indexOf(',') !== -1 || cell.indexOf('"') !== -1 || cell.indexOf('\n') !== -1){
+            var esc = cell.replace(/"/g, '""');
+            parts.push('"' + esc + '"');
+          } else {
+            parts.push(cell);
+          }
+          j = j + 1;
+        }
+        out += parts.join(',') + '\n';
+        i = i + 1;
+      }
+      return out;
+    }
+
+    function normalizeByMap(value, map){
+      if(value == null){ return value; }
+      var key = String(value);
+      if(map.hasOwnProperty(key)){ return map[key]; }
+      return value;
+    }
+
+    function unifyDateLike(value){
+      // 入力例: 2025/10/09, 10-09-2025, 2025年10月9日
+      if(value == null){ return value; }
+      var s = String(value).trim();
+      if(s === ''){ return s; }
+
+      // 2025/10/09 or 2025-10-09
+      var m1 = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+      if(m1){ 
+        var y = m1[1], mo = m1[2], d = m1[3];
+        return y + '/' + ('0'+mo).slice(-2) + '/' + ('0'+d).slice(-2);
+      }
+
+      // 10-09-2025 or 10/09/2025 (米式)
+      var m2 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if(m2){
+        var mo2 = m2[1], d2 = m2[2], y2 = m2[3];
+        return y2 + '/' + ('0'+mo2).slice(-2) + '/' + ('0'+d2).slice(-2);
+      }
+
+      // 2025年10月9日
+      var m3 = s.match(/^(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日$/);
+      if(m3){
+        var y3 = m3[1], mo3 = m3[2], d3 = m3[3];
+        return y3 + '/' + ('0'+mo3).slice(-2) + '/' + ('0'+d3).slice(-2);
+      }
+
+      return s; // 変換できない形はそのまま
+    }
+
+    function removeDuplicates(rows, keyCols){
+      if(keyCols.length === 0){ return rows; }
+      var header = rows[0];
+      var idx = [];
+      var i1 = 0;
+      while(i1 < keyCols.length){
+        var name = keyCols[i1];
+        var colIndex = header.indexOf(name);
+        if(colIndex !== -1){ idx.push(colIndex); }
+        i1 = i1 + 1;
+      }
+      if(idx.length === 0){ return rows; }
+
+      var seen = {};
+      var out = [header];
+      var r = 1;
+      while(r < rows.length){
+        var row = rows[r];
+        var keyParts = [];
+        var k = 0;
+        while(k < idx.length){
+          var v = row[idx[k]];
+          keyParts.push(String(v));
+          k = k + 1;
+        }
+        var key = keyParts.join('||');
+        if(!seen[key]){
+          seen[key] = true;
+          out.push(row);
+        }
+        r = r + 1;
+      }
+      return out;
+    }
+
+    (function(){
+      var input = document.getElementById('csvFile');
+      var runBtn = document.getElementById('runCsv');
+      var dlBtn = document.getElementById('downloadCsv');
+      var head = document.getElementById('previewHead');
+      var body = document.getElementById('previewBody');
+      var note = document.getElementById('csvNote');
+      var dateColInput = document.getElementById('dateCol');
+      var keyColsInput = document.getElementById('keyCols');
+      var mapInput = document.getElementById('normalizeMap');
+
+      var processedCsv = '';
+
+      runBtn.addEventListener('click', function(){
+        if(!input.files || input.files.length === 0){
+          note.textContent = 'ファイルが選ばれていません。';
+          return;
+        }
+        var file = input.files[0];
+        var reader = new FileReader();
+        reader.onload = function(e){
+          var text = String(e.target.result || '');
+          var rows = parseCsvSimple(text);
+          if(rows.length === 0){
+            note.textContent = 'CSVが空です。';
+            return;
+          }
+          // 正規化マップ
+          var map = {};
+          try{
+            var raw = mapInput.value.trim();
+            if(raw !== ''){
+              var tmp = JSON.parse(raw);
+              map = tmp;
+            }
+          }catch(err){
+            note.textContent = '正規化辞書(JSON)の形式が正しくありません。';
+            return;
+          }
+
+          // 1) 表記ゆらぎ（全列に適用）
+          var i = 0;
+          while(i < rows.length){
+            var row = rows[i];
+            var j = 0;
+            while(j < row.length){
+              row[j] = normalizeByMap(row[j], map);
+              j = j + 1;
+            }
+            i = i + 1;
+          }
+
+          // 2) 日付統一
+          var dateColName = dateColInput.value.trim();
+          if(dateColName !== ''){
+            var header = rows[0];
+            var colIndex = header.indexOf(dateColName);
+            if(colIndex !== -1){
+              var r = 1;
+              while(r < rows.length){
+                if(rows[r] && rows[r].length > colIndex){
+                  rows[r][colIndex] = unifyDateLike(rows[r][colIndex]);
+                }
+                r = r + 1;
+              }
+            }
+          }
+
+          // 3) 重複削除
+          var keyColsRaw = keyColsInput.value.trim();
+          if(keyColsRaw !== ''){
+            var names = keyColsRaw.split(',').map(function(s){ return s.trim(); });
+            rows = removeDuplicates(rows, names);
+          }
+
+          // プレビュー（先頭10行）
+          head.innerHTML = '';
+          body.innerHTML = '';
+          var theadRow = document.createElement('tr');
+          var h = 0;
+          while(h < rows[0].length){
+            var th = document.createElement('th');
+            th.textContent = rows[0][h];
+            theadRow.appendChild(th);
+            h = h + 1;
+          }
+          head.appendChild(theadRow);
+
+          var limit = rows.length;
+          if(limit > 11){ limit = 11; }
+          var r2 = 1;
+          while(r2 < limit){
+            var tr = document.createElement('tr');
+            var c = 0;
+            while(c < rows[r2].length){
+              var td = document.createElement('td');
+              td.textContent = rows[r2][c];
+              tr.appendChild(td);
+              c = c + 1;
+            }
+            body.appendChild(tr);
+            r2 = r2 + 1;
+          }
+
+          processedCsv = toCsv(rows);
+          dlBtn.disabled = false;
+          note.textContent = '整理完了。ダウンロードできます。行数: ' + rows.length;
+        };
+        reader.readAsText(file, 'utf-8');
+      });
+
+      dlBtn.addEventListener('click', function(){
+        if(processedCsv === ''){
+          return;
+        }
+        var blob = new Blob([processedCsv], {type:'text/csv;charset=utf-8;'});
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'cleaned.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      });
+    })();
+
+    // -------------- 画像 リサイズ & 圧縮 --------------
+    (function(){
+      var fileInput = document.getElementById('imgFile');
+      var longSideInput = document.getElementById('longSide');
+      var qualityInput = document.getElementById('quality');
+      var runBtn = document.getElementById('runImg');
+      var dlLink = document.getElementById('downloadImg');
+      var imgOrig = document.getElementById('previewOrig');
+      var imgOut = document.getElementById('previewOut');
+      var note = document.getElementById('imgNote');
+
+      var originalDataUrl = '';
+      var outputBlobUrl = '';
+
+      fileInput.addEventListener('change', function(){
+        var f = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+        if(!f){
+          imgOrig.removeAttribute('src');
+          originalDataUrl = '';
+          note.textContent = '画像が選ばれていません。';
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e){
+          originalDataUrl = String(e.target.result || '');
+          imgOrig.src = originalDataUrl;
+          note.textContent = '画像を読み込みました。';
+        };
+        reader.readAsDataURL(f);
+      });
+
+      runBtn.addEventListener('click', function(){
+        if(originalDataUrl === ''){
+          note.textContent = '先に画像を選んでください。';
+          return;
+        }
+        var longSide = parseInt(longSideInput.value, 10);
+        var quality = parseFloat(qualityInput.value);
+        if(isNaN(longSide) || longSide < 200){ longSide = 1280; }
+        if(isNaN(quality) || quality <= 0 || quality > 1){ quality = 0.8; }
+
+        var img = new Image();
+        img.onload = function(){
+          var w = img.width;
+          var h = img.height;
+          var scale = 1;
+
+          if(w >= h){
+            scale = longSide / w;
+          } else {
+            scale = longSide / h;
+          }
+          if(scale > 1){ scale = 1; }
+
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(w * scale);
+          canvas.height = Math.round(h * scale);
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          canvas.toBlob(function(blob){
+            if(!blob){
+              note.textContent = '変換に失敗しました。';
+              return;
+            }
+            if(outputBlobUrl !== ''){
+              URL.revokeObjectURL(outputBlobUrl);
+              outputBlobUrl = '';
+            }
+            outputBlobUrl = URL.createObjectURL(blob);
+            imgOut.src = outputBlobUrl;
+            dlLink.href = outputBlobUrl;
+            dlLink.style.display = 'inline-block';
+            note.textContent = '圧縮完了。サイズを確認して保存できます。';
+          }, 'image/jpeg', quality);
+        };
+        img.onerror = function(){
+          note.textContent = '画像の読み込みに失敗しました。';
+        };
+        img.src = originalDataUrl;
+      });
+    })();
+  </script>
+
+  <iframe
+    src="https://daiho-dev.github.io/web-app/chatbot.html"
+    aria-label="サイト共通チャットボット"
+    style="position: fixed; right: 20px; bottom: 20px;
+      width: min(92vw, 400px); height: min(72vh, 600px);
+      border: none; border-radius: 12px; box-shadow: 0 10px 28px rgba(0,0,0,.28);
+      z-index: 9999;"
+    loading="lazy"
+  ></iframe>
+</body>
+</html>
