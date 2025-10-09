@@ -36,7 +36,6 @@
 ---
 
 ## 📁 フォルダ構成
-
 web-app/
 ├── index.html # トップページ
 ├── chatbot.html # サイト共通チャットボット
