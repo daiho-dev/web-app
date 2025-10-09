@@ -57,7 +57,7 @@
     <div class="wrap">
       <div class="top">
         <div class="brand"><span class="dot" aria-hidden="true"></span>ツール集</div>
-        <nav class="muted"><a href="./ai.html">AI入門</a> / <a href="./data-yuragi.html">データゆらぎ</a></nav>
+        <!-- 右上リンクは削除 -->
       </div>
       <h1>アップロード加工ツール（ブラウザ内で完結）</h1>
       <p class="lead">データは外部送信しないで処理。学習と実務で使える小型ツールを増やしていこう。</p>
@@ -146,19 +146,11 @@
     <div class="muted">© 2025 ツール集｜作成: あなた（AI助サポート）</div>
   </footer>
 
-  <!-- 上へボタン（必要なら） -->
+  <!-- 上へボタン -->
   <button id="backToTop" type="button" aria-label="ページ上部へ" style="
     position: fixed; right: 16px; bottom: 16px; padding: 10px 12px; border-radius: 10px;
     background: #0b1220; border: 1px solid rgba(148,163,184,.25); color: var(--text);
     box-shadow: var(--shadow); cursor: pointer; display: none;">▲ 上へ</button>
-
-  <!-- 共通チャットボット（必要なら） -->
-  <iframe
-    src="./chatbot.html"
-    aria-label="サイト共通チャットボット"
-    style="position: fixed; right: 20px; bottom: 20px; width: min(92vw, 400px); height: min(72vh, 600px);
-      border: none; border-radius: 12px; box-shadow: 0 10px 28px rgba(0,0,0,.28); z-index: 9999;"
-    loading="lazy"></iframe>
 
   <script>
     // ▲ 上へ
@@ -175,7 +167,6 @@
     })();
 
     // -------------- CSV ゆらぎクリーナー --------------
-    // シンプルCSVパーサ（引用符や改行を含む複雑CSVは非対応）
     function parseCsvSimple(text){
       var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
       var rows = [];
@@ -221,33 +212,25 @@
     }
 
     function unifyDateLike(value){
-      // 入力例: 2025/10/09, 10-09-2025, 2025年10月9日
       if(value == null){ return value; }
       var s = String(value).trim();
       if(s === ''){ return s; }
-
-      // 2025/10/09 or 2025-10-09
       var m1 = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
       if(m1){ 
         var y = m1[1], mo = m1[2], d = m1[3];
         return y + '/' + ('0'+mo).slice(-2) + '/' + ('0'+d).slice(-2);
       }
-
-      // 10-09-2025 or 10/09/2025 (米式)
       var m2 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
       if(m2){
         var mo2 = m2[1], d2 = m2[2], y2 = m2[3];
         return y2 + '/' + ('0'+mo2).slice(-2) + '/' + ('0'+d2).slice(-2);
       }
-
-      // 2025年10月9日
       var m3 = s.match(/^(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日$/);
       if(m3){
         var y3 = m3[1], mo3 = m3[2], d3 = m3[3];
         return y3 + '/' + ('0'+mo3).slice(-2) + '/' + ('0'+d3).slice(-2);
       }
-
-      return s; // 変換できない形はそのまま
+      return s;
     }
 
     function removeDuplicates(rows, keyCols){
@@ -262,7 +245,6 @@
         i1 = i1 + 1;
       }
       if(idx.length === 0){ return rows; }
-
       var seen = {};
       var out = [header];
       var r = 1;
@@ -312,7 +294,6 @@
             note.textContent = 'CSVが空です。';
             return;
           }
-          // 正規化マップ
           var map = {};
           try{
             var raw = mapInput.value.trim();
@@ -325,7 +306,6 @@
             return;
           }
 
-          // 1) 表記ゆらぎ（全列に適用）
           var i = 0;
           while(i < rows.length){
             var row = rows[i];
@@ -337,7 +317,6 @@
             i = i + 1;
           }
 
-          // 2) 日付統一
           var dateColName = dateColInput.value.trim();
           if(dateColName !== ''){
             var header = rows[0];
@@ -353,14 +332,12 @@
             }
           }
 
-          // 3) 重複削除
           var keyColsRaw = keyColsInput.value.trim();
           if(keyColsRaw !== ''){
             var names = keyColsRaw.split(',').map(function(s){ return s.trim(); });
             rows = removeDuplicates(rows, names);
           }
 
-          // プレビュー（先頭10行）
           head.innerHTML = '';
           body.innerHTML = '';
           var theadRow = document.createElement('tr');
@@ -497,4 +474,3 @@
   </script>
 </body>
 </html>
-
