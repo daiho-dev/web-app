@@ -1,0 +1,15 @@
+.backmenu {
+  margin-bottom: 16px;
+}
+.backmenu a {
+  display: inline-block;
+  background: #2563eb;
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.backmenu a:hover {
+  opacity: 0.9;
+}
