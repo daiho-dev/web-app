@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>プロンプト集（業務向け）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", Arial, sans-serif; margin: 0; background: #f6f7f9; color: #111; }
+    .topbar { background: #ffffff; border-bottom: 1px solid #e5e7eb; }
+    .topbar .inner { max-width: 980px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .topbar a { text-decoration: none; color: #111; padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 18px 16px 40px; }
+    h1 { font-size: 20px; margin: 8px 0 12px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; }
+    .card h3 { margin: 0 0 8px; font-size: 16px; }
+    .sec { margin-top: 18px; }
+    .sec h2 { font-size: 18px; margin: 10px 0; }
+    .prompt { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; white-space: pre-wrap; }
+    .row { display: flex; gap: 8px; margin-top: 8px; }
+    button { padding: 8px 10px; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; cursor: pointer; }
+    .small { font-size: 13px; color: #555; }
+    .anchor { text-decoration: none; color: #2563eb; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+    .chip { padding: 6px 10px; border: 1px solid #e5e7eb; background: #fff; border-radius: 999px; cursor: pointer; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <!-- 他ページ風の上部リンク -->
+  <div class="topbar">
+    <div class="inner">
+      <a href="index.html">🏠 メニュー</a>
+      <a href="chatbot.html">AI入門ページへ</a>
+      <a href="power-automate.html">⚙️ Power Automateページへ</a>
+      <a href="web.html">Web入門ページへ</a>
+      <a href="data-noise.html">データゆらぎページへ</a>
+      <a href="prompts.html"><strong>📚 プロンプト集</strong></a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <h1>プロンプト集（業務で使える例：1〜5）</h1>
+    <div class="small">使い方：文をコピー → Copilot / ChatGPT / Gemini に貼る → 足りない情報だけ追記。</div>
+
+    <!-- クイック移動 -->
+    <div class="chips" id="jump">
+      <span class="chip" data-target="#s1">1. 事務・総務</span>
+      <span class="chip" data-target="#s2">2. 企画・分析</span>
+      <span class="chip" data-target="#s3">3. IT・開発</span>
+      <span class="chip" data-target="#s4">4. 営業・顧客</span>
+      <span class="chip" data-target="#s5">5. 学習・共有</span>
+    </div>
+
+    <!-- 1. 事務・総務 -->
+    <div class="sec" id="s1">
+      <h2>1. 事務・総務</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>議事録の要約</h3>
+          <div class="prompt" id="p101">【目的】会議メモを要点だけにまとめたい
+【対象】以下の議事録
+【出力】5行の要約＋決定事項＋ToDo（担当・期限）
+---
+（ここに議事録を貼る）</div>
+          <div class="row">
+            <button data-copy="#p101">コピー</button>
+            <button data-derive="#p101" data-add="文体はビジネス寄り。上司への報告メールとしてそのまま送れる形にして。">派生を追加</button>
+          </div>
+          <div class="small">派生例：ビジネス文体化 / ToDoだけ抽出 / 決裁向け1枚化</div>
+        </div>
+
+        <div class="card">
+          <h3>社内案内メール</h3>
+          <div class="prompt" id="p102">【目的】制度変更を社員に案内
+【条件】短く・やさしく・見出し付き
+【出力】件名案3つ＋本文（注意点・期限・リンクの空欄あり）
+【入力】変更点の要点：（ここに列挙）</div>
+          <div class="row">
+            <button data-copy="#p102">コピー</button>
+            <button data-derive="#p102" data-add="読者は新入社員。専門用語は言い換えて。">派生を追加</button>
+          </div>
+          <div class="small">派生例：対象別に語調変更 / 追伸でFAQリンク追加</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 企画・分析 -->
+    <div class="sec" id="s2">
+      <h2>2. 企画・分析</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>データの要点抽出</h3>
+          <div class="prompt" id="p201">【目的】表データの要点を抽出
+【出力】上昇トレンド上位3つ＋根拠（列名と数値）＋次の打ち手3つ
+【入力】表の概要：（列名・期間など）
+【データ】（ここに表や数値を貼る）</div>
+          <div class="row">
+            <button data-copy="#p201">コピー</button>
+            <button data-derive="#p201" data-add="経営会議用に1枚要約も出して。見出し＋箇条書きで。">発展を追加</button>
+          </div>
+          <div class="small">発展例：経営層向け1枚資料 / ダッシュボード説明文</div>
+        </div>
+
+        <div class="card">
+          <h3>報告書ドラフト</h3>
+          <div class="prompt" id="p202">【目的】週次報告のたたき台を作成
+【出力】1. サマリ（3行） 2. 実績 3. 課題 4. 次週計画 5. 依頼事項
+【入力】素材：（KPIや出来事を箇条書き）</div>
+          <div class="row">
+            <button data-copy="#p202">コピー</button>
+            <button data-derive="#p202" data-add="数字は表で。強調語は控えめで。">派生を追加</button>
+          </div>
+          <div class="small">派生例：部署別版 / クライアント向け版</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. IT・開発 -->
+    <div class="sec" id="s3">
+      <h2>3. IT・開発</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>エラー相談（PAC/PADなど）</h3>
+          <div class="prompt" id="p301">【目的】エラー原因と対処を知りたい
+【環境】（例：Power Automate Desktop / バージョン）
+【現象】（エラー文をそのまま貼る）
+【再現】（手順を箇条書き）
+【試したこと】（実施済みの対策）
+【出力】原因候補ベスト3＋確認手順＋回避策</div>
+          <div class="row">
+            <button data-copy="#p301">コピー</button>
+            <button data-derive="#p301" data-add="社内のセキュリティ制約が強い前提で、現実的な回避策にして。">派生を追加</button>
+          </div>
+          <div class="small">派生例：環境依存を考慮 / 権限・ネットワーク前提を追加</div>
+        </div>
+
+        <div class="card">
+          <h3>リファクタ相談</h3>
+          <div class="prompt" id="p302">【目的】読みやすく安全にしたい
+【対象】（関数やフローの抜粋を貼る）
+【制約】三項演算子は使わない／コメント多め
+【出力】改善方針＋リスク指摘＋サンプル修正（全関数を省略せず提示）</div>
+          <div class="row">
+            <button data-copy="#p302">コピー</button>
+            <button data-derive="#p302" data-add="ユニットテスト観点も追記して。">発展を追加</button>
+          </div>
+          <div class="small">発展例：テスト観点の追加 / コード規約の提案</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 営業・顧客 -->
+    <div class="sec" id="s4">
+      <h2>4. 営業・顧客</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>顧客メール返信案</h3>
+          <div class="prompt" id="p401">【状況】（要望／懸念／期日）
+【トーン】丁寧・簡潔・感情を落ち着かせる
+【出力】件名案2つ＋本文（結論先出し・箇条書き）＋次のアクション</div>
+          <div class="row">
+            <button data-copy="#p401">コピー</button>
+            <button data-derive="#p401" data-add="社外向けフォーマル度を上げて、固有名詞の表記ゆれを正して。">派生を追加</button>
+          </div>
+          <div class="small">派生例：社外向けフォーマル化 / 次アクションの明確化</div>
+        </div>
+
+        <div class="card">
+          <h3>提案書の骨組み</h3>
+          <div class="prompt" id="p402">【目的】提案書の構成を作る
+【条件】1. 表紙 2. 現状課題 3. 解決案 4. 期待効果 5. 体制 6. スケジュール 7. 価格 8. 次の一手
+【前提】（業界／規模／現状）
+【出力】各章の見出し＋箇条書き要点</div>
+          <div class="row">
+            <button data-copy="#p402">コピー</button>
+            <button data-derive="#p402" data-add="費用対効果の試算ひな形も追加して。">発展を追加</button>
+          </div>
+          <div class="small">発展例：ROI簡易試算 / 業界別サンプル</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. 学習・共有 -->
+    <div class="sec" id="s5">
+      <h2>5. 学習・共有</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>ナレッジまとめ</h3>
+          <div class="prompt" id="p501">【目的】複数資料から学びを整理
+【対象】（資料名やURLの一覧）
+【出力】要点5つ＋注意点3つ＋次回アクション3つ＋FAQ候補</div>
+          <div class="row">
+            <button data-copy="#p501">コピー</button>
+            <button data-derive="#p501" data-add="新人向けに、専門語は言い換えて。">派生を追加</button>
+          </div>
+          <div class="small">派生例：新人向け言い換え / 部署別の観点追加</div>
+        </div>
+
+        <div class="card">
+          <h3>社内講習スライド草案</h3>
+          <div class="prompt" id="p502">【目的】短い勉強会スライドの草案
+【時間】15分
+【出力】スライド見出し10枚分＋各3行要点＋冒頭の目的1行＋最後のまとめ1行
+【対象】（想定受講者）</div>
+          <div class="row">
+            <button data-copy="#p502">コピー</button>
+            <button data-derive="#p502" data-add="参加者の想定質問と回答例も3つ追加して。">発展を追加</button>
+          </div>
+          <div class="small">発展例：想定Q&A追加 / 演習タスク付与</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // クリックでコピー／派生テキストを生成（※三項演算子は不使用）
+    function copyFromSelector(sel) {
+      var el = document.querySelector(sel);
+      if (!el) { return; }
+      var text = el.textContent;
+      navigator.clipboard.writeText(text);
+    }
+
+    function appendDerived(selector, extra) {
+      var el = document.querySelector(selector);
+      if (!el) { return; }
+      var base = el.textContent;
+      var add = "\n【追加条件】" + extra;
+      el.textContent = base + "\n" + add;
+    }
+
+    function setupCopyButtons() {
+      var btns = document.querySelectorAll("button[data-copy]");
+      var i = 0;
+      while (i < btns.length) {
+        var b = btns[i];
+        b.addEventListener("click", function(ev) {
+          var targetSel = ev.currentTarget.getAttribute("data-copy");
+          if (targetSel) {
+            copyFromSelector(targetSel);
+          }
+        });
+        i = i + 1;
+      }
+    }
+
+    function setupDeriveButtons() {
+      var btns = document.querySelectorAll("button[data-derive]");
+      var i = 0;
+      while (i < btns.length) {
+        var b = btns[i];
+        b.addEventListener("click", function(ev) {
+          var sel = ev.currentTarget.getAttribute("data-derive");
+          var add = ev.currentTarget.getAttribute("data-add");
+          if (sel && add) {
+            appendDerived(sel, add);
+          }
+        });
+        i = i + 1;
+      }
+    }
+
+    function setupJumpChips() {
+      var chips = document.querySelectorAll("#jump .chip");
+      var i = 0;
+      while (i < chips.length) {
+        var c = chips[i];
+        c.addEventListener("click", function(ev) {
+          var target = ev.currentTarget.getAttribute("data-target");
+          if (target) {
+            var el = document.querySelector(target);
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }
+        });
+        i = i + 1;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      setupCopyButtons();
+      setupDeriveButtons();
+      setupJumpChips();
+    });
+  </script>
+</body>
+</html>
