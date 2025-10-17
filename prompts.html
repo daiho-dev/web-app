@@ -60,3 +60,56 @@
 
   <div class="sec">
     <h2>3. IT・開発</h2>
+    <div class="card">
+      <strong>エラー相談</strong>
+      <div class="prompt" id="p3">【目的】エラー原因と対処を知りたい  
+【環境】（例：Power Automate Desktop）  
+【現象】（エラー文）  
+【再現】（手順）  
+【出力】原因候補＋確認手順＋回避策</div>
+      <button data-copy="#p3">コピー</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>4. 営業・顧客</h2>
+    <div class="card">
+      <strong>顧客メール返信案</strong>
+      <div class="prompt" id="p4">【状況】（要望・懸念・期日）  
+【トーン】丁寧・簡潔・落ち着いた文体  
+【出力】件名案2つ＋本文＋次アクション</div>
+      <button data-copy="#p4">コピー</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>5. 学習・共有</h2>
+    <div class="card">
+      <strong>ナレッジまとめ</strong>
+      <div class="prompt" id="p5">【目的】複数資料から学びを整理  
+【出力】要点5つ＋注意点3つ＋次回アクション3つ</div>
+      <button data-copy="#p5">コピー</button>
+    </div>
+  </div>
+
+  <script>
+    // コピー機能
+    document.addEventListener("DOMContentLoaded", function() {
+      var btns = document.querySelectorAll("button[data-copy]");
+      var i = 0;
+      while (i < btns.length) {
+        var b = btns[i];
+        b.addEventListener("click", function(ev) {
+          var sel = ev.currentTarget.getAttribute("data-copy");
+          var el = document.querySelector(sel);
+          if (el) {
+            navigator.clipboard.writeText(el.textContent);
+            alert("コピーしました！");
+          }
+        });
+        i = i + 1;
+      }
+    });
+  </script>
+</body>
+</html>
