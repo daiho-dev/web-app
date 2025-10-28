@@ -201,3 +201,48 @@ Private Function GetShapesText(ByVal ws As Worksheet) As String
 
     GetShapesText = buf
 End Function
+
+'========================
+' 範囲をWordへ貼り付け
+'========================
+Private Function PasteRangeToWord(ByVal rng As Range, _
+                                  ByVal wdDoc As Object, _
+                                  ByVal mode As String, _
+                                  ByVal wdPasteRTF As Long, _
+                                  ByVal wdPasteEMF As Long, _
+                                  ByVal wdPasteOLE As Long) As Boolean
+    Const wdCollapseEnd As Long = 0
+    Dim wr As Object ' Word.Range
+
+    On Error GoTo ErrHandler
+
+    rng.Copy
+
+    Set wr = wdDoc.Content
+    wr.Collapse wdCollapseEnd
+
+    Select Case UCase$(mode)
+        Case "RTF"
+            ' 表の見た目をできるだけ保持しつつ編集も可
+            wr.PasteSpecial DataType:=wdPasteRTF
+
+        Case "PICTURE"
+            ' 見た目完全優先（編集不可）
+            wr.PasteSpecial DataType:=wdPasteEMF  ' 拡張メタファイル
+
+        Case "OLE"
+            ' Excelオブジェクト埋め込み（ダブルクリックで編集可）
+            wr.PasteSpecial DataType:=wdPasteOLE
+
+        Case Else
+            wr.PasteSpecial DataType:=wdPasteRTF
+    End Select
+
+    PasteRangeToWord = True
+    Exit Function
+
+ErrHandler:
+    PasteRangeToWord = False
+End Function
+
+
