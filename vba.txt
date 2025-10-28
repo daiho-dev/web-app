@@ -1,189 +1,160 @@
-Sub Aシート縦に集約()
-    Dim sWS As Worksheet  'データシート
-    Dim dWS As Worksheet  '集約用シート
-    Dim s_row As Long  'データシートの最終行数
-    Dim d_row As Long  '集約用シートの最終行数
-    Dim OpenFileName As String
-'ファイルを開くダイアログを表示
-OpenFileName = Application.GetOpenFilename("Excelファイル,*.xls*")
+Option Explicit
 
-'キャンセル時の処理
-If OpenFileName = "False" Then
-    'メッセージ表示
-    MsgBox "キャンセルされました。処理を終了します。"
-    End
-Else
-    Workbooks.Open OpenFileName
-End If
+' 目的：
+' ・ブック内の全シートを「集約シート」に縦連結
+' ・シート名をA列に付ける
+' ・数式は値として貼り付け
+' ・フィルタ中でも可視セルを優先
+' ・空シートはスキップ
+' ・Select/Activate不使用で高速・安定
 
-
-'画面更新停止
-Application.ScreenUpdating = False
-
-'確認ダイアログ停止
-Application.DisplayAlerts = False
-
-'集約シートがあるか確認
-For Each sh In Sheets
-    If sh.Name = "集約シート" Then
-        flag = True
-        Exit For
-    End If
-Next sh
-
-If flag = True Then
-
-    Dim rc As Integer
+Public Sub Aシート縦に集約()
+    Dim OpenFileName As Variant
+    Dim srcWb As Workbook
+    Dim dWS As Worksheet
+    Dim sh As Worksheet
+    Dim d_row As Long
+    Dim flag As Boolean
+    Dim ans As VbMsgBoxResult
     
-    'メッセージ表示
-    rc = MsgBox("シート「集約シート」を上書きしますか？" &amp; Chr(13) &amp; "※この処理は戻せません", vbYesNo + vbQuestion, "確認")
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    Application.Calculation = xlCalculationManual
     
-    If rc = vbYes Then
-        '画面更新停止
-        Application.ScreenUpdating = False
-        
-        'シート選択
-        Worksheets("集約シート").Activate
-    
-        'シート削除
-        ActiveSheet.Delete
-
-        '画面更新停止
-        Application.ScreenUpdating = True
-        
-        'メッセージ表示
-        MsgBox "処理前のシート「集約シート」は削除済みです"
-        
-        'シート追加
-        Worksheets.Add before:=Worksheets(1)
-        
-        'シート名変更
-        ActiveSheet.Name = "集約シート"
-
-        'シート選択
-        Worksheets("集約シート").Activate
-
-
-
-        Set dWS = Worksheets("集約シート")
-        
-        'ブックを上書き保存
-        ActiveWorkbook.Save
-        
-        '集約用シートの最終行数に1を代入
-        d_row = 1
-        
-        '各シートにコードを実行
-        For Each sWS In Worksheets
-        
-            'sWSとdWSのシート名が一致しない場合
-            If sWS.Name &lt;&gt; dWS.Name Then
-            
-                With sWS.UsedRange
-                    'シートsWSをアクティブにする
-                    sWS.Activate
-                
-                    'シートの最終セルを選択する
-                    ActiveCell.SpecialCells(xlLastCell).Select
-                    
-                    '最終セルの行を取得、変数に代入
-                    s_row = ActiveCell.row
-    
-                    '最終行から1行目までを選択
-                    Rows(1 &amp; ":" &amp; s_row).Select
-    
-                    '最終行から1行目までをコピー
-                    Selection.Copy
-    
-                    '集約用シートを選択
-                    dWS.Activate
-    
-                    '行を選択
-                    Rows(d_row).Select
-    
-                    'コピーしたデータを貼り付け
-                    ActiveSheet.Paste
-    
-                    'シートの最終セルを選択する
-                    ActiveCell.SpecialCells(xlLastCell).Select
-    
-                    '最終セルの行を取得、変数に代入
-                    d_row = ActiveCell.Offset(1, 0).row
-    
-                End With
-            End If
-        Next sWS
-        
-    Else
-        
-        'メッセージ表示
+    '--- ファイル選択（キャンセル対応）
+    OpenFileName = Application.GetOpenFilename("Excelファイル,*.xls*")
+    If OpenFileName = False Then
         MsgBox "キャンセルされました。処理を終了します。"
-    
+        GoTo FinallyExit
     End If
     
-Else
-        'シート追加
-        Worksheets.Add before:=Worksheets(1)
-        
-        'シート名変更
-        ActiveSheet.Name = "集約シート"
-
-        'シート選択
-        Worksheets("集約シート").Activate
-
-        Set dWS = Worksheets("集約シート")
-        
-        '集約用シートのセルを全削除
-        Worksheets("集約シート").Cells.Select
-        Selection.Delete Shift:=xlUp
-        
-        'ブックを上書き保存
-        ActiveWorkbook.Save
-        
-        '集約用シートの最終行数に1を代入
-        d_row = 1
-        
-        '各シートにコードを実行
-        For Each sWS In Worksheets
-        
-            'sWSとdWSのシート名が一致しない場合
-            If sWS.Name &lt;&gt; dWS.Name Then
-            
-                With sWS.UsedRange
-                    'シートsWSをアクティブにする
-                    sWS.Activate
-                
-                    'シートの最終セルを選択する
-                    ActiveCell.SpecialCells(xlLastCell).Select
-                    
-                    '最終セルの行を取得、変数に代入
-                    s_row = ActiveCell.row
+    Set srcWb = Workbooks.Open(OpenFileName)
     
-                    '最終行から1行目までを選択
-                    Rows(1 &amp; ":" &amp; s_row).Select
+    '--- 既存「集約シート」の存在確認
+    flag = SheetExists(srcWb, "集約シート")
     
-                    '最終行から1行目までをコピー
-                    Selection.Copy
+    If flag Then
+        ans = MsgBox("シート「集約シート」を上書きしますか？" & vbCrLf & "※この処理は戻せません", vbYesNo + vbQuestion, "確認")
+        If ans = vbNo Then
+            MsgBox "キャンセルされました。処理を終了します。"
+            GoTo FinallyExit
+        End If
+        Application.DisplayAlerts = False
+        srcWb.Worksheets("集約シート").Delete
+        Application.DisplayAlerts = True
+    End If
     
-                    '集約用シートを選択
-                    dWS.Activate
+    '--- 集約シート新規作成
+    Set dWS = srcWb.Worksheets.Add(Before:=srcWb.Worksheets(1))
+    dWS.Name = "集約シート"
+    dWS.Cells.Clear
     
-                    '行を選択
-                    Rows(d_row).Select
+    '--- ヘッダー
+    dWS.Range("A1").Value = "Sheet"
+    dWS.Range("B1").Value = "Data (values only)"
+    d_row = 2
     
-                    'コピーしたデータを貼り付け
-                    ActiveSheet.Paste
+    '--- 全シート走査
+    For Each sh In srcWb.Worksheets
+        If sh.Name <> dWS.Name Then
+            Call AppendOneSheet(sh, dWS, d_row)
+        End If
+    Next sh
     
-                    'シートの最終セルを選択する
-                    ActiveCell.SpecialCells(xlLastCell).Select
+    '--- 体裁
+    dWS.Columns("A:A").ColumnWidth = 20
+    dWS.Columns("A:Z").EntireColumn.AutoFit
+    dWS.Rows(1).Font.Bold = True
     
-                    '最終セルの行を取得、変数に代入
-                    d_row = ActiveCell.Offset(1, 0).row
+    '--- 保存
+    srcWb.Save
     
-                End With
-            End If
-        Next sWS
+    MsgBox "統合完了：『集約シート』へ出力しました。"
     
-End If
-
+FinallyExit:
+    Application.Calculation = xlCalculationAutomatic
+    Application.DisplayAlerts = True
+    Application.ScreenUpdating = True
 End Sub
+
+'==================== 補助：1シート分を追記 ====================
+
+Private Sub AppendOneSheet(ByVal src As Worksheet, ByVal dst As Worksheet, ByRef d_row As Long)
+    Dim rng As Range
+    Dim vis As Range
+    Dim r As Long, c As Long
+    Dim lastWriteRow As Long
+    
+    ' UsedRangeの安全取得（空ならNothing）
+    Set rng = GetReliableUsedRange(src)
+    If rng Is Nothing Then Exit Sub
+    
+    ' オートフィルタがあれば可視セルを優先
+    On Error Resume Next
+    If HasAutoFilter(src) Then
+        Set vis = src.AutoFilter.Range.SpecialCells(xlCellTypeVisible)
+    End If
+    On Error GoTo 0
+    
+    If vis Is Nothing Then
+        Set vis = rng
+    End If
+    
+    ' 実データが無ければ終了
+    If WorksheetFunction.CountA(vis) = 0 Then Exit Sub
+    
+    r = vis.Rows.Count
+    c = vis.Columns.Count
+    
+    ' A列にシート名を縦に付与
+    dst.Cells(d_row, 1).Resize(r, 1).Value = src.Name
+    ' B列以降に値を転記（数式は値化）
+    dst.Cells(d_row, 2).Resize(r, c).Value = vis.Value
+    
+    ' 区切りの空行1行
+    lastWriteRow = d_row + r
+    d_row = lastWriteRow + 1
+End Sub
+
+'==================== 補助：UsedRangeの安全取得 ====================
+
+Private Function GetReliableUsedRange(ByVal ws As Worksheet) As Range
+    Dim ur As Range
+    On Error Resume Next
+    Set ur = ws.UsedRange
+    On Error GoTo 0
+    
+    If ur Is Nothing Then
+        Set GetReliableUsedRange = Nothing
+    Else
+        If Application.WorksheetFunction.CountA(ur) = 0 Then
+            Set GetReliableUsedRange = Nothing
+        Else
+            Set GetReliableUsedRange = ur
+        End If
+    End If
+End Function
+
+'==================== 補助：オートフィルタ有無 ====================
+
+Private Function HasAutoFilter(ByVal ws As Worksheet) As Boolean
+    On Error Resume Next
+    HasAutoFilter = False
+    If ws.AutoFilterMode Then
+        HasAutoFilter = True
+    End If
+    On Error GoTo 0
+End Function
+
+'==================== 補助：シート存在確認 ====================
+
+Private Function SheetExists(ByVal wb As Workbook, ByVal name As String) As Boolean
+    Dim ws As Worksheet
+    SheetExists = False
+    For Each ws In wb.Worksheets
+        If ws.Name = name Then
+            SheetExists = True
+            Exit Function
+        End If
+    Next ws
+End Function
