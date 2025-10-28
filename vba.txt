@@ -1,226 +1,189 @@
-Option Explicit
+Sub Aシート縦に集約()
+    Dim sWS As Worksheet  'データシート
+    Dim dWS As Worksheet  '集約用シート
+    Dim s_row As Long  'データシートの最終行数
+    Dim d_row As Long  '集約用シートの最終行数
+    Dim OpenFileName As String
+'ファイルを開くダイアログを表示
+OpenFileName = Application.GetOpenFilename("Excelファイル,*.xls*")
 
-'===============================
-' 1) 全シートのセル内容を1枚に統合（強化版）
-'    ・テーブル(ListObject)があれば、まずそれを優先して可視セルを取得
-'    ・テーブルが無い場合は、オートフィルタ可視セル or UsedRange を取得
-'    ・シート名／テーブル名を付けて追記
-'===============================
-Public Sub MergeSheetsToMaster()
-    Dim ws As Worksheet
-    Dim master As Worksheet
-    Dim lastRow As Long
-    
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-    Application.Calculation = xlCalculationManual
-    
-    On Error Resume Next
-    Worksheets("MASTER").Delete
-    On Error GoTo 0
-    
-    Set master = Worksheets.Add(After:=Worksheets(Worksheets.Count))
-    master.Name = "MASTER"
-    master.Range("A1").Value = "Sheet"
-    master.Range("B1").Value = "Section"
-    master.Range("C1").Value = "Data (values only)"
-    
-    For Each ws In ThisWorkbook.Worksheets
-        If ws.Name <> master.Name Then
-            Call AppendWorksheetData(ws, master)
-        End If
-    Next ws
-    
-    With master
-        .Rows(1).Font.Bold = True
-        .Columns("A:C").EntireColumn.AutoFit
-        .Activate
-    End With
-    
-    Application.Calculation = xlCalculationAutomatic
-    Application.DisplayAlerts = True
-    Application.ScreenUpdating = True
-    
-    MsgBox "統合完了：MASTERに出力しました。"
-End Sub
+'キャンセル時の処理
+If OpenFileName = "False" Then
+    'メッセージ表示
+    MsgBox "キャンセルされました。処理を終了します。"
+    End
+Else
+    Workbooks.Open OpenFileName
+End If
 
-'===============================
-' 2) 図・図形・グラフのテキストを回収
-'===============================
-Public Sub ExtractShapesTextToMaster()
-    Dim master As Worksheet
-    Dim ws As Worksheet
-    Dim shp As Shape
-    Dim outRow As Long
-    Dim textContent As String
-    Dim hasAny As Boolean
-    
-    Set master = GetOrCreateMaster()
-    
-    outRow = master.Cells(master.Rows.Count, "A").End(xlUp).Row + 1
-    master.Cells(outRow, 1).Value = "----- Shapes (図・図形テキスト) -----"
-    master.Cells(outRow, 1).Font.Bold = True
-    outRow = outRow + 1
-    
-    hasAny = False
-    
-    For Each ws In ThisWorkbook.Worksheets
-        If ws.Name <> master.Name Then
-            For Each shp In ws.Shapes
-                textContent = ""
-                
-                On Error Resume Next
-                If shp.TextFrame2.HasText Then
-                    textContent = shp.TextFrame2.TextRange.Text
-                ElseIf shp.TextFrame.Characters.Count > 0 Then
-                    textContent = shp.TextFrame.Characters.Text
-                End If
-                On Error GoTo 0
-                
-                If Len(Trim$(textContent)) = 0 Then
-                    textContent = shp.AlternativeText
-                End If
-                
-                If Len(Trim$(textContent)) > 0 Then
-                    master.Cells(outRow, 1).Value = ws.Name
-                    master.Cells(outRow, 2).Value = "Shapes"
-                    master.Cells(outRow, 3).Value = textContent
-                    outRow = outRow + 1
-                    hasAny = True
-                End If
-            Next shp
-        End If
-    Next ws
-    
-    If hasAny = False Then
-        master.Cells(outRow, 1).Value = "(図から取得できるテキストは見つかりませんでした)"
+
+'画面更新停止
+Application.ScreenUpdating = False
+
+'確認ダイアログ停止
+Application.DisplayAlerts = False
+
+'集約シートがあるか確認
+For Each sh In Sheets
+    If sh.Name = "集約シート" Then
+        flag = True
+        Exit For
     End If
-    
-    master.Columns("A:C").AutoFit
-    MsgBox "図・図形テキストの抽出が完了しました。（MASTERへ追記）"
-End Sub
+Next sh
 
-'===============================
-' 補助：対象シートのデータをMASTERへ追記
-'===============================
-Private Sub AppendWorksheetData(ByVal ws As Worksheet, ByVal master As Worksheet)
-    Dim lo As ListObject
-    Dim rng As Range
-    Dim vis As Range
-    Dim lastRow As Long
-    Dim rowsCount As Long
-    Dim colsCount As Long
-    Dim wrote As Boolean
+If flag = True Then
+
+    Dim rc As Integer
     
-    wrote = False
+    'メッセージ表示
+    rc = MsgBox("シート「集約シート」を上書きしますか？" &amp; Chr(13) &amp; "※この処理は戻せません", vbYesNo + vbQuestion, "確認")
     
-    ' 1) テーブルがある場合：各テーブルの可視セル(DataBodyRange)を優先
-    If ws.ListObjects.Count > 0 Then
-        For Each lo In ws.ListObjects
-            If Not lo.DataBodyRange Is Nothing Then
-                On Error Resume Next
-                Set vis = lo.DataBodyRange.SpecialCells(xlCellTypeVisible)
-                On Error GoTo 0
-                If Not vis Is Nothing Then
-                    rowsCount = vis.Rows.Count
-                    colsCount = vis.Columns.Count
-                    lastRow = master.Cells(master.Rows.Count, "A").End(xlUp).Row
-                    
-                    master.Cells(lastRow + 1, 1).Resize(rowsCount, 1).Value = ws.Name
-                    master.Cells(lastRow + 1, 2).Resize(rowsCount, 1).Value = "Table: " & lo.Name
-                    master.Cells(lastRow + 1, 3).Resize(rowsCount, colsCount).Value = vis.Value
-                    wrote = True
-                    
-                    Set vis = Nothing
-                End If
-            End If
-        Next lo
-    End If
-    
-    ' 2) テーブルが無い、またはテーブル以外のセルも拾いたい場合
-    '    オートフィルタ可視セル or UsedRange
-    Set rng = GetReliableUsedRange(ws)
-    If Not rng Is Nothing Then
-        On Error Resume Next
-        If HasAutoFilterVisible(ws) Then
-            Set vis = ws.AutoFilter.Range.SpecialCells(xlCellTypeVisible)
-        End If
-        On Error GoTo 0
+    If rc = vbYes Then
+        '画面更新停止
+        Application.ScreenUpdating = False
         
-        If vis Is Nothing Then
-            Set vis = rng
-        End If
+        'シート選択
+        Worksheets("集約シート").Activate
+    
+        'シート削除
+        ActiveSheet.Delete
+
+        '画面更新停止
+        Application.ScreenUpdating = True
         
-        If Not vis Is Nothing Then
-            rowsCount = vis.Rows.Count
-            colsCount = vis.Columns.Count
-            lastRow = master.Cells(master.Rows.Count, "A").End(xlUp).Row
+        'メッセージ表示
+        MsgBox "処理前のシート「集約シート」は削除済みです"
+        
+        'シート追加
+        Worksheets.Add before:=Worksheets(1)
+        
+        'シート名変更
+        ActiveSheet.Name = "集約シート"
+
+        'シート選択
+        Worksheets("集約シート").Activate
+
+
+
+        Set dWS = Worksheets("集約シート")
+        
+        'ブックを上書き保存
+        ActiveWorkbook.Save
+        
+        '集約用シートの最終行数に1を代入
+        d_row = 1
+        
+        '各シートにコードを実行
+        For Each sWS In Worksheets
+        
+            'sWSとdWSのシート名が一致しない場合
+            If sWS.Name &lt;&gt; dWS.Name Then
             
-            master.Cells(lastRow + 1, 1).Resize(rowsCount, 1).Value = ws.Name
-            master.Cells(lastRow + 1, 2).Resize(rowsCount, 1).Value = "Sheet"
-            master.Cells(lastRow + 1, 3).Resize(rowsCount, colsCount).Value = vis.Value
-            wrote = True
-        End If
-    End If
+                With sWS.UsedRange
+                    'シートsWSをアクティブにする
+                    sWS.Activate
+                
+                    'シートの最終セルを選択する
+                    ActiveCell.SpecialCells(xlLastCell).Select
+                    
+                    '最終セルの行を取得、変数に代入
+                    s_row = ActiveCell.row
     
-    If wrote = False Then
-        lastRow = master.Cells(master.Rows.Count, "A").End(xlUp).Row + 1
-        master.Cells(lastRow, 1).Value = ws.Name
-        master.Cells(lastRow, 2).Value = "Sheet"
-        master.Cells(lastRow, 3).Value = "(データ無し or 取得不可)"
-    End If
-End Sub
-
-'===============================
-' 補助：UsedRangeを安全に取得
-'===============================
-Private Function GetReliableUsedRange(ByVal ws As Worksheet) As Range
-    Dim ur As Range
-    On Error Resume Next
-    Set ur = ws.UsedRange
-    On Error GoTo 0
+                    '最終行から1行目までを選択
+                    Rows(1 &amp; ":" &amp; s_row).Select
     
-    If ur Is Nothing Then
-        Set GetReliableUsedRange = Nothing
-        Exit Function
-    End If
-    If Application.WorksheetFunction.CountA(ur) = 0 Then
-        Set GetReliableUsedRange = Nothing
+                    '最終行から1行目までをコピー
+                    Selection.Copy
+    
+                    '集約用シートを選択
+                    dWS.Activate
+    
+                    '行を選択
+                    Rows(d_row).Select
+    
+                    'コピーしたデータを貼り付け
+                    ActiveSheet.Paste
+    
+                    'シートの最終セルを選択する
+                    ActiveCell.SpecialCells(xlLastCell).Select
+    
+                    '最終セルの行を取得、変数に代入
+                    d_row = ActiveCell.Offset(1, 0).row
+    
+                End With
+            End If
+        Next sWS
+        
     Else
-        Set GetReliableUsedRange = ur
-    End If
-End Function
-
-'===============================
-' 補助：オートフィルタで可視セルがあるか
-'===============================
-Private Function HasAutoFilterVisible(ByVal ws As Worksheet) As Boolean
-    On Error Resume Next
-    HasAutoFilterVisible = False
-    If ws.AutoFilterMode Then
-        If ws.AutoFilter.FilterMode Then
-            HasAutoFilterVisible = True
-        Else
-            ' フィルタはあるが未適用でも、可視セル抽出は使える
-            HasAutoFilterVisible = True
-        End If
-    End If
-    On Error GoTo 0
-End Function
-
-'===============================
-' MASTERが無ければ作る
-'===============================
-Private Function GetOrCreateMaster() As Worksheet
-    On Error Resume Next
-    Set GetOrCreateMaster = Worksheets("MASTER")
-    On Error GoTo 0
+        
+        'メッセージ表示
+        MsgBox "キャンセルされました。処理を終了します。"
     
-    If GetOrCreateMaster Is Nothing Then
-        Set GetOrCreateMaster = Worksheets.Add(After:=Worksheets(Worksheets.Count))
-        GetOrCreateMaster.Name = "MASTER"
-        GetOrCreateMaster.Range("A1").Value = "Sheet"
-        GetOrCreateMaster.Range("B1").Value = "Section"
-        GetOrCreateMaster.Range("C1").Value = "Data"
     End If
-End Function
+    
+Else
+        'シート追加
+        Worksheets.Add before:=Worksheets(1)
+        
+        'シート名変更
+        ActiveSheet.Name = "集約シート"
+
+        'シート選択
+        Worksheets("集約シート").Activate
+
+        Set dWS = Worksheets("集約シート")
+        
+        '集約用シートのセルを全削除
+        Worksheets("集約シート").Cells.Select
+        Selection.Delete Shift:=xlUp
+        
+        'ブックを上書き保存
+        ActiveWorkbook.Save
+        
+        '集約用シートの最終行数に1を代入
+        d_row = 1
+        
+        '各シートにコードを実行
+        For Each sWS In Worksheets
+        
+            'sWSとdWSのシート名が一致しない場合
+            If sWS.Name &lt;&gt; dWS.Name Then
+            
+                With sWS.UsedRange
+                    'シートsWSをアクティブにする
+                    sWS.Activate
+                
+                    'シートの最終セルを選択する
+                    ActiveCell.SpecialCells(xlLastCell).Select
+                    
+                    '最終セルの行を取得、変数に代入
+                    s_row = ActiveCell.row
+    
+                    '最終行から1行目までを選択
+                    Rows(1 &amp; ":" &amp; s_row).Select
+    
+                    '最終行から1行目までをコピー
+                    Selection.Copy
+    
+                    '集約用シートを選択
+                    dWS.Activate
+    
+                    '行を選択
+                    Rows(d_row).Select
+    
+                    'コピーしたデータを貼り付け
+                    ActiveSheet.Paste
+    
+                    'シートの最終セルを選択する
+                    ActiveCell.SpecialCells(xlLastCell).Select
+    
+                    '最終セルの行を取得、変数に代入
+                    d_row = ActiveCell.Offset(1, 0).row
+    
+                End With
+            End If
+        Next sWS
+    
+End If
+
+End Sub
