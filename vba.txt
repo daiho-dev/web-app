@@ -1,0 +1,160 @@
+Option Explicit
+
+'===============================
+' 1) 全シートのセル内容を1枚に統合
+'    ・シート名をA列に付ける
+'    ・数式は値で貼り付け（テキスト重視）
+'    ・空のシートはスキップ
+'===============================
+Public Sub MergeSheetsToMaster()
+    Dim ws As Worksheet
+    Dim master As Worksheet
+    Dim src As Range
+    Dim lastRow As Long
+    Dim rowsCount As Long
+    Dim colsCount As Long
+    Dim firstWrite As Boolean
+    
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    
+    On Error Resume Next
+    Worksheets("MASTER").Delete
+    On Error GoTo 0
+    
+    Set master = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+    master.Name = "MASTER"
+    
+    ' ヘッダー
+    master.Range("A1").Value = "Sheet"
+    master.Range("B1").Value = "Data (values only)"
+    firstWrite = True
+    
+    For Each ws In ThisWorkbook.Worksheets
+        If ws.Name <> master.Name Then
+            If Not IsSheetEmpty(ws) Then
+                Set src = ws.UsedRange
+                If Not src Is Nothing Then
+                    rowsCount = src.Rows.Count
+                    colsCount = src.Columns.Count
+                    
+                    lastRow = master.Cells(master.Rows.Count, "A").End(xlUp).Row
+                    
+                    ' シート名をA列に縦に入れる
+                    master.Cells(lastRow + 1, 1).Resize(rowsCount, 1).Value = ws.Name
+                    
+                    ' 値として貼り付け
+                    master.Cells(lastRow + 1, 2).Resize(rowsCount, colsCount).Value = src.Value
+                    
+                    ' 見やすさのため区切り行を1行いれる
+                    master.Cells(lastRow + rowsCount + 1, 1).EntireRow.Insert
+                End If
+            End If
+        End If
+    Next ws
+    
+    ' 体裁
+    With master
+        .Columns("A:A").ColumnWidth = 20
+        .Columns("B:Z").AutoFit
+        .Rows(1).Font.Bold = True
+        .Activate
+    End With
+    
+    Application.DisplayAlerts = True
+    Application.ScreenUpdating = True
+    
+    MsgBox "シート統合が完了しました。（MASTERへ出力）"
+End Sub
+
+'===============================
+' 2) 図・図形・グラフのテキストを回収
+'    ・テキストフレーム／代替テキストを拾う
+'    ・MASTERの末尾に「Shapes」ブロックとして追記
+'===============================
+Public Sub ExtractShapesTextToMaster()
+    Dim master As Worksheet
+    Dim ws As Worksheet
+    Dim shp As Shape
+    Dim outRow As Long
+    Dim textContent As String
+    Dim hasAny As Boolean
+    
+    Set master = GetOrCreateMaster()
+    
+    outRow = master.Cells(master.Rows.Count, "A").End(xlUp).Row + 1
+    master.Cells(outRow, 1).Value = "----- Shapes (図・図形テキスト) -----"
+    master.Cells(outRow, 1).Font.Bold = True
+    outRow = outRow + 1
+    
+    hasAny = False
+    
+    For Each ws In ThisWorkbook.Worksheets
+        If ws.Name <> master.Name Then
+            For Each shp In ws.Shapes
+                textContent = ""
+                
+                ' テキストフレーム
+                On Error Resume Next
+                If shp.TextFrame2.HasText Then
+                    textContent = shp.TextFrame2.TextRange.Text
+                ElseIf shp.TextFrame.Characters.Count > 0 Then
+                    textContent = shp.TextFrame.Characters.Text
+                End If
+                On Error GoTo 0
+                
+                ' 空なら代替テキストも見る
+                If Len(Trim$(textContent)) = 0 Then
+                    textContent = shp.AlternativeText
+                End If
+                
+                ' 何か取れたら出力
+                If Len(Trim$(textContent)) > 0 Then
+                    master.Cells(outRow, 1).Value = ws.Name
+                    master.Cells(outRow, 2).Value = "ShapeName: " & shp.Name
+                    master.Cells(outRow, 3).Value = textContent
+                    outRow = outRow + 1
+                    hasAny = True
+                End If
+            Next shp
+        End If
+    Next ws
+    
+    If hasAny = False Then
+        master.Cells(outRow, 1).Value = "(図から取得できるテキストは見つかりませんでした)"
+    End If
+    
+    master.Columns("A:C").AutoFit
+    MsgBox "図・図形テキストの抽出が完了しました。（MASTERへ追記）"
+End Sub
+
+'===============================
+' 3) 補助：MASTERが無ければ作る
+'===============================
+Private Function GetOrCreateMaster() As Worksheet
+    On Error Resume Next
+    Set GetOrCreateMaster = Worksheets("MASTER")
+    On Error GoTo 0
+    
+    If GetOrCreateMaster Is Nothing Then
+        Set GetOrCreateMaster = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+        GetOrCreateMaster.Name = "MASTER"
+        GetOrCreateMaster.Range("A1").Value = "Sheet"
+        GetOrCreateMaster.Range("B1").Value = "Data"
+    End If
+End Function
+
+'===============================
+' 4) 補助：シートが実質空か判定
+'===============================
+Private Function IsSheetEmpty(ByVal ws As Worksheet) As Boolean
+    Dim ur As Range
+    On Error Resume Next
+    Set ur = ws.UsedRange
+    On Error GoTo 0
+    If ur Is Nothing Then
+        IsSheetEmpty = True
+    Else
+        IsSheetEmpty = (Application.WorksheetFunction.CountA(ur) = 0)
+    End If
+End Function
