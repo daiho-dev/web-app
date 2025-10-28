@@ -1,160 +1,203 @@
 Option Explicit
 
-' 目的：
-' ・ブック内の全シートを「集約シート」に縦連結
-' ・シート名をA列に付ける
-' ・数式は値として貼り付け
-' ・フィルタ中でも可視セルを優先
-' ・空シートはスキップ
-' ・Select/Activate不使用で高速・安定
+'========================
+' Excel全シート → 1本のWordへ出力
+' 設定：
+'   PASTE_MODE = "RTF"      … 表として貼り付け（書式をできるだけ保持、編集しやすい）
+'   PASTE_MODE = "PICTURE"  … 画像として貼り付け（見た目そのまま、編集不可）
+'   PASTE_MODE = "OLE"      … Excelオブジェクトとして埋め込み（ダブルクリックで編集）
+'========================
+Public Sub ExportAllSheetsToWord()
+    Const PASTE_MODE As String = "RTF" ' "RTF" / "PICTURE" / "OLE"
 
-Public Sub Aシート縦に集約()
-    Dim OpenFileName As Variant
-    Dim srcWb As Workbook
-    Dim dWS As Worksheet
-    Dim sh As Worksheet
-    Dim d_row As Long
-    Dim flag As Boolean
-    Dim ans As VbMsgBoxResult
-    
+    ' Word定数（Late Binding用）
+    Const wdCollapseEnd As Long = 0
+    Const wdPasteRTF As Long = 1
+    Const wdPasteText As Long = 2
+    Const wdPasteMetafilePicture As Long = 3
+    Const wdPasteOLEObject As Long = 0
+    Const wdPasteEnhancedMetafile As Long = 9
+
+    Dim wdApp As Object        ' Word.Application
+    Dim wdDoc As Object        ' Word.Document
+    Dim outPath As String
+    Dim ws As Worksheet
+    Dim ur As Range
+    Dim wr As Object           ' Word.Range
+    Dim nowStr As String
+    Dim pasted As Boolean
+    Dim shapesText As String
+
+    If ThisWorkbook.Path = "" Then
+        MsgBox "先にこのブックを保存してください。", vbExclamation
+        Exit Sub
+    End If
+
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
     Application.Calculation = xlCalculationManual
-    
-    '--- ファイル選択（キャンセル対応）
-    OpenFileName = Application.GetOpenFilename("Excelファイル,*.xls*")
-    If OpenFileName = False Then
-        MsgBox "キャンセルされました。処理を終了します。"
-        GoTo FinallyExit
+
+    nowStr = Format(Now, "yyyymmdd_HHMM")
+    outPath = ThisWorkbook.Path & "\Export_" & nowStr & ".docx"
+
+    ' Word起動（Late Binding：参照設定いらない）
+    On Error Resume Next
+    Set wdApp = CreateObject("Word.Application")
+    On Error GoTo 0
+    If wdApp Is Nothing Then
+        CleanUp
+        MsgBox "Wordを起動できませんでした。Wordがインストールされているか確認してください。", vbCritical
+        Exit Sub
     End If
-    
-    Set srcWb = Workbooks.Open(OpenFileName)
-    
-    '--- 既存「集約シート」の存在確認
-    flag = SheetExists(srcWb, "集約シート")
-    
-    If flag Then
-        ans = MsgBox("シート「集約シート」を上書きしますか？" & vbCrLf & "※この処理は戻せません", vbYesNo + vbQuestion, "確認")
-        If ans = vbNo Then
-            MsgBox "キャンセルされました。処理を終了します。"
-            GoTo FinallyExit
+
+    wdApp.Visible = True
+    Set wdDoc = wdApp.Documents.Add
+
+    ' 表紙っぽくタイトル
+    Set wr = wdDoc.Content
+    wr.Collapse wdCollapseEnd
+    wr.InsertAfter "Excelシート出力" & vbCrLf
+    wr.InsertAfter ThisWorkbook.Name & vbCrLf
+    wr.InsertAfter Format(Now, "yyyy/mm/dd HH:MM") & vbCrLf & vbCrLf
+
+    ' 全シート
+    For Each ws In ThisWorkbook.Worksheets
+        If ws.Visible = xlSheetVisible Then
+            Set ur = GetSafeUsedRange(ws)
+            If Not ur Is Nothing Then
+                ' 見出し（太字）
+                Set wr = wdDoc.Content
+                wr.Collapse wdCollapseEnd
+                wr.InsertAfter "【" & ws.Name & "】" & vbCrLf
+                wr.SetRange Start:=wr.End - Len("【" & ws.Name & "】" & vbCrLf), _
+                            End:=wr.End
+                wr.Bold = True
+
+                ' データ貼り付け
+                pasted = PasteRangeToWord ur, wdDoc, PASTE_MODE, _
+                           wdPasteRTF, wdPasteEnhancedMetafile, wdPasteOLEObject
+
+                ' 図・図形のテキスト（補足）
+                shapesText = GetShapesText(ws)
+                If Len(shapesText) > 0 Then
+                    Set wr = wdDoc.Content
+                    wr.Collapse wdCollapseEnd
+                    wr.InsertAfter vbCrLf & "＜図・図形テキスト＞" & vbCrLf & shapesText & vbCrLf
+                End If
+
+                ' 区切り
+                Set wr = wdDoc.Content
+                wr.Collapse wdCollapseEnd
+                wr.InsertAfter vbCrLf
+            End If
         End If
-        Application.DisplayAlerts = False
-        srcWb.Worksheets("集約シート").Delete
-        Application.DisplayAlerts = True
-    End If
-    
-    '--- 集約シート新規作成
-    Set dWS = srcWb.Worksheets.Add(Before:=srcWb.Worksheets(1))
-    dWS.Name = "集約シート"
-    dWS.Cells.Clear
-    
-    '--- ヘッダー
-    dWS.Range("A1").Value = "Sheet"
-    dWS.Range("B1").Value = "Data (values only)"
-    d_row = 2
-    
-    '--- 全シート走査
-    For Each sh In srcWb.Worksheets
-        If sh.Name <> dWS.Name Then
-            Call AppendOneSheet(sh, dWS, d_row)
-        End If
-    Next sh
-    
-    '--- 体裁
-    dWS.Columns("A:A").ColumnWidth = 20
-    dWS.Columns("A:Z").EntireColumn.AutoFit
-    dWS.Rows(1).Font.Bold = True
-    
-    '--- 保存
-    srcWb.Save
-    
-    MsgBox "統合完了：『集約シート』へ出力しました。"
-    
-FinallyExit:
+    Next ws
+
+    ' 保存
+    On Error Resume Next
+    wdDoc.SaveAs2 outPath
+    On Error GoTo 0
+
+    MsgBox "Wordへ出力しました：" & outPath, vbInformation
+
+CleanUp:
     Application.Calculation = xlCalculationAutomatic
     Application.DisplayAlerts = True
     Application.ScreenUpdating = True
 End Sub
 
-'==================== 補助：1シート分を追記 ====================
+'========================
+' 範囲をWordへ貼り付け
+'========================
+Private Function PasteRangeToWord(ByVal rng As Range, _
+                                  ByVal wdDoc As Object, _
+                                  ByVal mode As String, _
+                                  ByVal wdPasteRTF As Long, _
+                                  ByVal wdPasteEMF As Long, _
+                                  ByVal wdPasteOLE As Long) As Boolean
+    Const wdCollapseEnd As Long = 0
+    Dim wr As Object ' Word.Range
 
-Private Sub AppendOneSheet(ByVal src As Worksheet, ByVal dst As Worksheet, ByRef d_row As Long)
-    Dim rng As Range
-    Dim vis As Range
-    Dim r As Long, c As Long
-    Dim lastWriteRow As Long
-    
-    ' UsedRangeの安全取得（空ならNothing）
-    Set rng = GetReliableUsedRange(src)
-    If rng Is Nothing Then Exit Sub
-    
-    ' オートフィルタがあれば可視セルを優先
-    On Error Resume Next
-    If HasAutoFilter(src) Then
-        Set vis = src.AutoFilter.Range.SpecialCells(xlCellTypeVisible)
-    End If
-    On Error GoTo 0
-    
-    If vis Is Nothing Then
-        Set vis = rng
-    End If
-    
-    ' 実データが無ければ終了
-    If WorksheetFunction.CountA(vis) = 0 Then Exit Sub
-    
-    r = vis.Rows.Count
-    c = vis.Columns.Count
-    
-    ' A列にシート名を縦に付与
-    dst.Cells(d_row, 1).Resize(r, 1).Value = src.Name
-    ' B列以降に値を転記（数式は値化）
-    dst.Cells(d_row, 2).Resize(r, c).Value = vis.Value
-    
-    ' 区切りの空行1行
-    lastWriteRow = d_row + r
-    d_row = lastWriteRow + 1
-End Sub
+    On Error GoTo ErrHandler
 
-'==================== 補助：UsedRangeの安全取得 ====================
+    rng.Copy
 
-Private Function GetReliableUsedRange(ByVal ws As Worksheet) As Range
+    Set wr = wdDoc.Content
+    wr.Collapse wdCollapseEnd
+
+    Select Case UCase$(mode)
+        Case "RTF"
+            ' 表の見た目をできるだけ保持しつつ編集も可
+            wr.PasteSpecial DataType:=wdPasteRTF
+
+        Case "PICTURE"
+            ' 見た目完全優先（編集不可）
+            wr.PasteSpecial DataType:=wdPasteEMF  ' 拡張メタファイル
+
+        Case "OLE"
+            ' Excelオブジェクト埋め込み（ダブルクリックで編集可）
+            wr.PasteSpecial DataType:=wdPasteOLE
+
+        Case Else
+            ' デフォルトはRTF
+            wr.PasteSpecial DataType:=wdPasteRTF
+    End Select
+
+    PasteRangeToWord = True
+    Exit Function
+
+ErrHandler:
+    PasteRangeToWord = False
+End Function
+
+'========================
+' UsedRangeを安全に取得
+'========================
+Private Function GetSafeUsedRange(ByVal ws As Worksheet) As Range
     Dim ur As Range
     On Error Resume Next
     Set ur = ws.UsedRange
     On Error GoTo 0
-    
+
     If ur Is Nothing Then
-        Set GetReliableUsedRange = Nothing
+        Set GetSafeUsedRange = Nothing
+        Exit Function
+    End If
+
+    If Application.WorksheetFunction.CountA(ur) = 0 Then
+        Set GetSafeUsedRange = Nothing
     Else
-        If Application.WorksheetFunction.CountA(ur) = 0 Then
-            Set GetReliableUsedRange = Nothing
-        Else
-            Set GetReliableUsedRange = ur
-        End If
+        Set GetSafeUsedRange = ur
     End If
 End Function
 
-'==================== 補助：オートフィルタ有無 ====================
+'========================
+' 図・図形のテキストを回収
+'========================
+Private Function GetShapesText(ByVal ws As Worksheet) As String
+    Dim shp As Shape
+    Dim t As String
+    Dim buf As String
 
-Private Function HasAutoFilter(ByVal ws As Worksheet) As Boolean
-    On Error Resume Next
-    HasAutoFilter = False
-    If ws.AutoFilterMode Then
-        HasAutoFilter = True
-    End If
-    On Error GoTo 0
-End Function
+    For Each shp In ws.Shapes
+        t = ""
 
-'==================== 補助：シート存在確認 ====================
-
-Private Function SheetExists(ByVal wb As Workbook, ByVal name As String) As Boolean
-    Dim ws As Worksheet
-    SheetExists = False
-    For Each ws In wb.Worksheets
-        If ws.Name = name Then
-            SheetExists = True
-            Exit Function
+        On Error Resume Next
+        If shp.TextFrame2.HasText Then
+            t = shp.TextFrame2.TextRange.Text
+        ElseIf shp.TextFrame.Characters.Count > 0 Then
+            t = shp.TextFrame.Characters.Text
         End If
-    Next ws
+        On Error GoTo 0
+
+        If Len(Trim$(t)) = 0 Then
+            t = shp.AlternativeText
+        End If
+
+        If Len(Trim$(t)) > 0 Then
+            buf = buf & "・" & t & vbCrLf
+        End If
+    Next shp
+
+    GetShapesText = buf
 End Function
