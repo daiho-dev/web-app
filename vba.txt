@@ -1,32 +1,26 @@
 Option Explicit
 
-'========================
-' Excel全シート → 1本のWordへ出力
-' 設定：
-'   PASTE_MODE = "RTF"      … 表として貼り付け（書式をできるだけ保持、編集しやすい）
-'   PASTE_MODE = "PICTURE"  … 画像として貼り付け（見た目そのまま、編集不可）
-'   PASTE_MODE = "OLE"      … Excelオブジェクトとして埋め込み（ダブルクリックで編集）
-'========================
+' 出力形式を切り替え（"RTF" / "PICTURE" / "OLE"）
+Private Const PASTE_MODE As String = "RTF"
+
+' Word定数（Late Binding用）
+Private Const wdCollapseEnd As Long = 0
+Private Const wdPasteRTF As Long = 1
+Private Const wdPasteText As Long = 2
+Private Const wdPasteMetafilePicture As Long = 3
+Private Const wdPasteEnhancedMetafile As Long = 9
+Private Const wdPasteOLEObject As Long = 0
+
 Public Sub ExportAllSheetsToWord()
-    Const PASTE_MODE As String = "RTF" ' "RTF" / "PICTURE" / "OLE"
-
-    ' Word定数（Late Binding用）
-    Const wdCollapseEnd As Long = 0
-    Const wdPasteRTF As Long = 1
-    Const wdPasteText As Long = 2
-    Const wdPasteMetafilePicture As Long = 3
-    Const wdPasteOLEObject As Long = 0
-    Const wdPasteEnhancedMetafile As Long = 9
-
     Dim wdApp As Object        ' Word.Application
     Dim wdDoc As Object        ' Word.Document
     Dim outPath As String
     Dim ws As Worksheet
     Dim ur As Range
-    Dim wr As Object           ' Word.Range
+    Dim wr As Object
     Dim nowStr As String
-    Dim pasted As Boolean
     Dim shapesText As String
+    Dim pasted As Boolean
 
     If ThisWorkbook.Path = "" Then
         MsgBox "先にこのブックを保存してください。", vbExclamation
@@ -40,32 +34,31 @@ Public Sub ExportAllSheetsToWord()
     nowStr = Format(Now, "yyyymmdd_HHMM")
     outPath = ThisWorkbook.Path & "\Export_" & nowStr & ".docx"
 
-    ' Word起動（Late Binding：参照設定いらない）
     On Error Resume Next
     Set wdApp = CreateObject("Word.Application")
     On Error GoTo 0
     If wdApp Is Nothing Then
-        CleanUp
-        MsgBox "Wordを起動できませんでした。Wordがインストールされているか確認してください。", vbCritical
+        Call CleanUp
+        MsgBox "Wordを起動できませんでした。Wordのインストールを確認してください。", vbCritical
         Exit Sub
     End If
 
     wdApp.Visible = True
     Set wdDoc = wdApp.Documents.Add
 
-    ' 表紙っぽくタイトル
+    ' タイトル
     Set wr = wdDoc.Content
     wr.Collapse wdCollapseEnd
     wr.InsertAfter "Excelシート出力" & vbCrLf
     wr.InsertAfter ThisWorkbook.Name & vbCrLf
     wr.InsertAfter Format(Now, "yyyy/mm/dd HH:MM") & vbCrLf & vbCrLf
 
-    ' 全シート
+    ' 全シートを順に
     For Each ws In ThisWorkbook.Worksheets
         If ws.Visible = xlSheetVisible Then
             Set ur = GetSafeUsedRange(ws)
             If Not ur Is Nothing Then
-                ' 見出し（太字）
+                ' 見出し
                 Set wr = wdDoc.Content
                 wr.Collapse wdCollapseEnd
                 wr.InsertAfter "【" & ws.Name & "】" & vbCrLf
@@ -74,10 +67,14 @@ Public Sub ExportAllSheetsToWord()
                 wr.Bold = True
 
                 ' データ貼り付け
-                pasted = PasteRangeToWord ur, wdDoc, PASTE_MODE, _
-                           wdPasteRTF, wdPasteEnhancedMetafile, wdPasteOLEObject
+                pasted = PasteRangeToWord(ur, wdDoc, PASTE_MODE)
+                If pasted = False Then
+                    Set wr = wdDoc.Content
+                    wr.Collapse wdCollapseEnd
+                    wr.InsertAfter "(貼り付けに失敗しました)" & vbCrLf
+                End If
 
-                ' 図・図形のテキスト（補足）
+                ' 図・図形テキスト
                 shapesText = GetShapesText(ws)
                 If Len(shapesText) > 0 Then
                     Set wr = wdDoc.Content
@@ -93,53 +90,31 @@ Public Sub ExportAllSheetsToWord()
         End If
     Next ws
 
-    ' 保存
     On Error Resume Next
     wdDoc.SaveAs2 outPath
     On Error GoTo 0
 
+    Call CleanUp
     MsgBox "Wordへ出力しました：" & outPath, vbInformation
-
-CleanUp:
-    Application.Calculation = xlCalculationAutomatic
-    Application.DisplayAlerts = True
-    Application.ScreenUpdating = True
 End Sub
 
-'========================
-' 範囲をWordへ貼り付け
-'========================
-Private Function PasteRangeToWord(ByVal rng As Range, _
-                                  ByVal wdDoc As Object, _
-                                  ByVal mode As String, _
-                                  ByVal wdPasteRTF As Long, _
-                                  ByVal wdPasteEMF As Long, _
-                                  ByVal wdPasteOLE As Long) As Boolean
-    Const wdCollapseEnd As Long = 0
-    Dim wr As Object ' Word.Range
-
+' 範囲をWordへ貼り付け（出力形式切替）
+Private Function PasteRangeToWord(ByVal rng As Range, ByVal wdDoc As Object, ByVal mode As String) As Boolean
+    Dim wr As Object
     On Error GoTo ErrHandler
 
     rng.Copy
-
     Set wr = wdDoc.Content
     wr.Collapse wdCollapseEnd
 
     Select Case UCase$(mode)
         Case "RTF"
-            ' 表の見た目をできるだけ保持しつつ編集も可
             wr.PasteSpecial DataType:=wdPasteRTF
-
         Case "PICTURE"
-            ' 見た目完全優先（編集不可）
-            wr.PasteSpecial DataType:=wdPasteEMF  ' 拡張メタファイル
-
+            wr.PasteSpecial DataType:=wdPasteEnhancedMetafile
         Case "OLE"
-            ' Excelオブジェクト埋め込み（ダブルクリックで編集可）
-            wr.PasteSpecial DataType:=wdPasteOLE
-
+            wr.PasteSpecial DataType:=wdPasteOLEObject
         Case Else
-            ' デフォルトはRTF
             wr.PasteSpecial DataType:=wdPasteRTF
     End Select
 
@@ -150,9 +125,7 @@ ErrHandler:
     PasteRangeToWord = False
 End Function
 
-'========================
 ' UsedRangeを安全に取得
-'========================
 Private Function GetSafeUsedRange(ByVal ws As Worksheet) As Range
     Dim ur As Range
     On Error Resume Next
@@ -161,19 +134,14 @@ Private Function GetSafeUsedRange(ByVal ws As Worksheet) As Range
 
     If ur Is Nothing Then
         Set GetSafeUsedRange = Nothing
-        Exit Function
-    End If
-
-    If Application.WorksheetFunction.CountA(ur) = 0 Then
+    ElseIf Application.WorksheetFunction.CountA(ur) = 0 Then
         Set GetSafeUsedRange = Nothing
     Else
         Set GetSafeUsedRange = ur
     End If
 End Function
 
-'========================
 ' 図・図形のテキストを回収
-'========================
 Private Function GetShapesText(ByVal ws As Worksheet) As String
     Dim shp As Shape
     Dim t As String
@@ -202,47 +170,10 @@ Private Function GetShapesText(ByVal ws As Worksheet) As String
     GetShapesText = buf
 End Function
 
-'========================
-' 範囲をWordへ貼り付け
-'========================
-Private Function PasteRangeToWord(ByVal rng As Range, _
-                                  ByVal wdDoc As Object, _
-                                  ByVal mode As String, _
-                                  ByVal wdPasteRTF As Long, _
-                                  ByVal wdPasteEMF As Long, _
-                                  ByVal wdPasteOLE As Long) As Boolean
-    Const wdCollapseEnd As Long = 0
-    Dim wr As Object ' Word.Range
-
-    On Error GoTo ErrHandler
-
-    rng.Copy
-
-    Set wr = wdDoc.Content
-    wr.Collapse wdCollapseEnd
-
-    Select Case UCase$(mode)
-        Case "RTF"
-            ' 表の見た目をできるだけ保持しつつ編集も可
-            wr.PasteSpecial DataType:=wdPasteRTF
-
-        Case "PICTURE"
-            ' 見た目完全優先（編集不可）
-            wr.PasteSpecial DataType:=wdPasteEMF  ' 拡張メタファイル
-
-        Case "OLE"
-            ' Excelオブジェクト埋め込み（ダブルクリックで編集可）
-            wr.PasteSpecial DataType:=wdPasteOLE
-
-        Case Else
-            wr.PasteSpecial DataType:=wdPasteRTF
-    End Select
-
-    PasteRangeToWord = True
-    Exit Function
-
-ErrHandler:
-    PasteRangeToWord = False
-End Function
-
-
+' 後片付け
+Private Sub CleanUp()
+    On Error Resume Next
+    Application.Calculation = xlCalculationAutomatic
+    Application.DisplayAlerts = True
+    Application.ScreenUpdating = True
+End Sub
