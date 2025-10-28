@@ -194,4 +194,33 @@ End Function
 '===============================
 ' 補助：オートフィルタで可視セルがあるか
 '===============================
-Private Function HasAutoFilterVisible(ByVal ws As Workshe
+Private Function HasAutoFilterVisible(ByVal ws As Worksheet) As Boolean
+    On Error Resume Next
+    HasAutoFilterVisible = False
+    If ws.AutoFilterMode Then
+        If ws.AutoFilter.FilterMode Then
+            HasAutoFilterVisible = True
+        Else
+            ' フィルタはあるが未適用でも、可視セル抽出は使える
+            HasAutoFilterVisible = True
+        End If
+    End If
+    On Error GoTo 0
+End Function
+
+'===============================
+' MASTERが無ければ作る
+'===============================
+Private Function GetOrCreateMaster() As Worksheet
+    On Error Resume Next
+    Set GetOrCreateMaster = Worksheets("MASTER")
+    On Error GoTo 0
+    
+    If GetOrCreateMaster Is Nothing Then
+        Set GetOrCreateMaster = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+        GetOrCreateMaster.Name = "MASTER"
+        GetOrCreateMaster.Range("A1").Value = "Sheet"
+        GetOrCreateMaster.Range("B1").Value = "Section"
+        GetOrCreateMaster.Range("C1").Value = "Data"
+    End If
+End Function
